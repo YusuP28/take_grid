@@ -222,6 +222,7 @@ class GridPreview extends StatelessWidget {
                           left: o.position.dx * w - 50 * o.scale,
                           top: o.position.dy * h - 25 * o.scale,
                           child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: onOverlayTap != null
                                 ? () => onOverlayTap!(idx)
                                 : null,

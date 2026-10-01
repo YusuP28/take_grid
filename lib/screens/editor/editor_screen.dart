@@ -13,7 +13,8 @@ import 'dart:ui' as ui;
 
 class EditorScreen extends StatefulWidget {
   final GridTemplate template;
-  const EditorScreen({super.key, required this.template});
+  final List<String>? initialImages;
+  const EditorScreen({super.key, required this.template, this.initialImages});
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -31,6 +32,13 @@ class _EditorScreenState extends State<EditorScreen> {
   void initState() {
     super.initState();
     _project = GridProject(template: widget.template);
+    // Isi initial images (dari Auto Grid)
+    if (widget.initialImages != null) {
+      for (int i = 0; i < widget.initialImages!.length; i++) {
+        if (i >= _project.imagePaths.length) break;
+        _project.setImage(i, widget.initialImages![i]);
+      }
+    }
   }
 
   Future<void> _pickImageForCell(int index) async {
@@ -110,15 +118,15 @@ class _EditorScreenState extends State<EditorScreen> {
                       value: _project.borderWidth,
                       min: 0,
                       max: 20,
-                      divisions: 20,
-                      label: '${_project.borderWidth.round()}px',
+                      divisions: 40,
+                      label: '${_project.borderWidth.toStringAsFixed(1)}px',
                       onChanged: (v) {
                         setLocal(() {});
                         setState(() => _project.borderWidth = v);
                       },
                     ),
                   ),
-                  Text('${_project.borderWidth.round()}px',
+                  Text('${_project.borderWidth.toStringAsFixed(1)}px',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),

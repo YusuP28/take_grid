@@ -1,11 +1,44 @@
 import 'package:flutter/material.dart';
 import '../../models/grid_template.dart';
 import '../editor/editor_screen.dart';
+import '../../services/smart_grid_service.dart';
+import 'package:image_picker/image_picker.dart';
 import '../freestyle/freestyle_screen.dart';
 import '../../widgets/grid_preview.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<void> _autoGrid(BuildContext context) async {
+    final picker = ImagePicker();
+    final files = await picker.pickMultiImage(
+      imageQuality: 90,
+      maxWidth: 2048,
+      limit: 12,
+    );
+    if (files.isEmpty) return;
+    if (files.length > 12) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Max 12 foto. Ambil 12 teratas.')),
+        );
+      }
+    }
+
+    final count = files.length > 12 ? 12 : files.length;
+    final template = SmartGridService.forPhotoCount(count);
+
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditorScreen(
+          template: template,
+          initialImages: files.take(count).map((f) => f.path).toList(),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +70,27 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // Tombol Auto Grid
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.auto_awesome,
+                    color: Colors.white),
+              ),
+              title: const Text('Auto Grid',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Pilih foto → grid otomatis (max 12)'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () => _autoGrid(context),
+            ),
+          ),
+
           // Tombol Free Style
           Card(
             margin: const EdgeInsets.only(bottom: 16),
