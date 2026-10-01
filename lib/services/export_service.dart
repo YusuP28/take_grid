@@ -1,0 +1,147 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:gal/gal.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
+
+enum ExportFormat { jpg, png }
+
+enum ExportQuality {
+  hd720('720p', 720),
+  fhd1080('1080p', 1080),
+  qhd1440('1440p', 1440),
+  uhd2048('2048p', 2048),
+  uhd4k('4K', 2160);
+
+  final String label;
+  final int px;
+  const ExportQuality(this.label, this.px);
+}
+
+class ExportResult {
+  final bool success;
+  final String? path;
+  final String? error;
+  ExportResult({required this.success, this.path, this.error});
+}
+
+class ExportService {
+  static final ExportService _i = ExportService._();
+  factory ExportService() => _i;
+  ExportService._();
+
+  /// Capture widget dari GlobalKey → bytes PNG
+  Future<Uint8List?> captureWidget(GlobalKey key) async {
+    try {
+      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('captureWidget error: $e');
+      return null;
+    }
+  }
+
+  /// Proses + save ke galeri
+  Future<ExportResult> saveToGallery({
+    required Uint8List pngBytes,
+    required ExportFormat format,
+    required ExportQuality quality,
+  }) async {
+    try {
+      // Decode → resize → encode sesuai format
+      final decoded = img.decodeImage(pngBytes);
+      if (decoded == null) {
+        return ExportResult(success: false, error: 'Gagal decode gambar');
+      }
+
+      // Resize ke target quality (square)
+      final target = quality.px;
+      final resized = img.copyResize(
+        decoded,
+        width: target,
+        height: target,
+        interpolation: img.Interpolation.cubic,
+      );
+
+      Uint8List output;
+      String ext;
+      if (format == ExportFormat.jpg) {
+        output = Uint8List.fromList(img.encodeJpg(resized, quality: 92));
+        ext = 'jpg';
+      } else {
+        output = Uint8List.fromList(img.encodePng(resized));
+        ext = 'png';
+      }
+
+      // Save ke galeri via gal
+      final filename = 'TakeGrid_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      await Gal.putImageBytes(output, name: filename);
+
+      return ExportResult(success: true, path: filename);
+    } catch (e) {
+      debugPrint('saveToGallery error: $e');
+      return ExportResult(success: false, error: e.toString());
+    }
+  }
+
+  /// Save ke temp file (untuk share)
+  Future<File?> saveToTempFile({
+    required Uint8List pngBytes,
+    required ExportFormat format,
+    required ExportQuality quality,
+  }) async {
+    try {
+      final decoded = img.decodeImage(pngBytes);
+      if (decoded == null) return null;
+
+      final resized = img.copyResize(
+        decoded,
+        width: quality.px,
+        height: quality.px,
+        interpolation: img.Interpolation.cubic,
+      );
+
+      Uint8List output;
+      String ext;
+      if (format == ExportFormat.jpg) {
+        output = Uint8List.fromList(img.encodeJpg(resized, quality: 92));
+        ext = 'jpg';
+      } else {
+        output = Uint8List.fromList(img.encodePng(resized));
+        ext = 'png';
+      }
+
+      final dir = await getTemporaryDirectory();
+      final file = File(
+          '${dir.path}/TakeGrid_${DateTime.now().millisecondsSinceEpoch}.$ext');
+      await file.writeAsBytes(output);
+      return file;
+    } catch (e) {
+      debugPrint('saveToTempFile error: $e');
+      return null;
+    }
+  }
+
+  /// Cek permission galeri
+  Future<bool> hasGalleryAccess() async {
+    try {
+      return await Gal.hasAccess();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> requestGalleryAccess() async {
+    try {
+      return await Gal.requestAccess();
+    } catch (_) {
+      return false;
+    }
+  }
+}

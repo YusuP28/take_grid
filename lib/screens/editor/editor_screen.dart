@@ -6,6 +6,9 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../models/grid_project.dart';
 import '../../models/grid_template.dart';
 import '../../widgets/grid_preview.dart';
+import '../../services/export_service.dart';
+import 'dart:ui' as ui;
+import 'package:gal/gal.dart';
 
 class EditorScreen extends StatefulWidget {
   final GridTemplate template;
@@ -18,6 +21,10 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   late GridProject _project;
   final _picker = ImagePicker();
+  final _exportKey = GlobalKey();
+  ExportFormat _format = ExportFormat.jpg;
+  ExportQuality _quality = ExportQuality.fhd1080;
+  bool _exporting = false;
 
   @override
   void initState() {
@@ -183,6 +190,124 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  Future<void> _showExportDialog() async {
+    if (!_project.isComplete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(
+            'Isi semua foto dulu (${_project.filledCount}/${_project.template.cellCount})')),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Export'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Format', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              SegmentedButton<ExportFormat>(
+                segments: const [
+                  ButtonSegment(value: ExportFormat.jpg, label: Text('JPG')),
+                  ButtonSegment(value: ExportFormat.png, label: Text('PNG')),
+                ],
+                selected: {_format},
+                onSelectionChanged: (s) {
+                  setLocal(() {});
+                  _format = s.first;
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text('Kualitas', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              DropdownButton<ExportQuality>(
+                value: _quality,
+                isExpanded: true,
+                items: ExportQuality.values
+                    .map((q) => DropdownMenuItem(
+                          value: q,
+                          child: Text('${q.label} (${q.px}px)'),
+                        ))
+                    .toList(),
+                onChanged: (q) {
+                  if (q != null) {
+                    setLocal(() {});
+                    _quality = q;
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _doExport();
+              },
+              child: const Text('Export'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _doExport() async {
+    setState(() => _exporting = true);
+    try {
+      // 1. Cek permission
+      final has = await ExportService().hasGalleryAccess();
+      if (!has) {
+        await ExportService().requestGalleryAccess();
+      }
+
+      // 2. Capture widget
+      final pngBytes = await ExportService().captureWidget(_exportKey);
+      if (pngBytes == null) {
+        throw Exception('Gagal capture gambar');
+      }
+
+      // 3. Save ke galeri
+      final result = await ExportService().saveToGallery(
+        pngBytes: pngBytes,
+        format: _format,
+        quality: _quality,
+      );
+
+      if (result.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Tersimpan: ${result.path}'),
+              action: SnackBarAction(
+                label: 'OK',
+                onPressed: () {},
+              ),
+            ),
+          );
+        }
+      } else {
+        throw Exception(result.error ?? 'Gagal export');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export gagal: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
   Widget _toolBtn(IconData icon, String label, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -217,13 +342,14 @@ class _EditorScreenState extends State<EditorScreen> {
             onPressed: _pickMultipleImages,
           ),
           IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: 'Selesai',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Export — Fase 8')),
-              );
-            },
+            icon: _exporting
+                ? const SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_alt),
+            tooltip: 'Export',
+            onPressed: _exporting ? null : _showExportDialog,
           ),
         ],
       ),
@@ -235,14 +361,17 @@ class _EditorScreenState extends State<EditorScreen> {
               color: scheme.surfaceContainerHighest,
               padding: const EdgeInsets.all(16),
               child: Center(
-                child: GridPreview(
-                  template: _project.template,
-                  imagePaths: _project.imagePaths,
-                  borderWidth: _project.borderWidth,
-                  borderColor: _project.borderColor,
-                  backgroundColor: _project.backgroundColor,
-                  cellColor: scheme.surfaceContainerHigh,
-                  ratio: _project.ratio,
+                child: RepaintBoundary(
+                  key: _exportKey,
+                  child: GridPreview(
+                    template: _project.template,
+                    imagePaths: _project.imagePaths,
+                    borderWidth: _project.borderWidth,
+                    borderColor: _project.borderColor,
+                    backgroundColor: _project.backgroundColor,
+                    cellColor: scheme.surfaceContainerHigh,
+                    ratio: _project.ratio,
+                  ),
                 ),
               ),
             ),
