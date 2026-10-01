@@ -887,6 +887,34 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Future<void> _doExport() async {
     setState(() => _exporting = true);
+
+    // Tampilkan loading dialog non-dismissible
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WillPopScope(
+        onWillPop: () async => false,
+        child: Center(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Export sedang diproses...'),
+                  SizedBox(height: 8),
+                  Text('Mohon tunggu, jangan tutup app',
+                      style: TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     try {
       // 1. Cek permission
       final has = await ExportService().hasGalleryAccess();
@@ -907,15 +935,17 @@ class _EditorScreenState extends State<EditorScreen> {
         quality: _quality,
       );
 
+      // Tutup loading dialog
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
       if (result.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Tersimpan: ${result.path}'),
-              action: SnackBarAction(
-                label: 'OK',
-                onPressed: () {},
-              ),
+              action: SnackBarAction(label: 'OK', onPressed: () {}),
             ),
           );
         }
@@ -923,6 +953,10 @@ class _EditorScreenState extends State<EditorScreen> {
         throw Exception(result.error ?? 'Gagal export');
       }
     } catch (e) {
+      // Tutup loading dialog (kalau masih terbuka)
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Export gagal: $e')),
@@ -934,17 +968,19 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   Widget _toolBtn(IconData icon, String label, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22),
+            Icon(icon, size: 22, color: scheme.onSurface),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 11)),
+            Text(label,
+                style: TextStyle(fontSize: 11, color: scheme.onSurface)),
           ],
         ),
       ),

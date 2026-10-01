@@ -315,6 +315,7 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
   }
 
   Widget _toolBtn(IconData icon, String label, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -322,9 +323,10 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22),
+            Icon(icon, size: 22, color: scheme.onSurface),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 11)),
+            Text(label,
+                style: TextStyle(fontSize: 11, color: scheme.onSurface)),
           ],
         ),
       ),
