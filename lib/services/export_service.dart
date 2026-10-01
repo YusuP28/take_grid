@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:media_store_plus/media_store_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
@@ -80,19 +80,27 @@ class ExportService {
         ext = 'png';
       }
 
-      // Save ke galeri via image_gallery_saver
-      final filename = 'TakeGrid_${DateTime.now().millisecondsSinceEpoch}';
-      final result = await ImageGallerySaver.saveImage(
-        output,
-        quality: 100,
-        name: filename,
+      // Save ke galeri via media_store_plus
+      final ms = MediaStore();
+      final filename = 'TakeGrid_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+      final dir = await getTemporaryDirectory();
+      final tempFile = File('${dir.path}/$filename');
+      await tempFile.writeAsBytes(output);
+
+      // Save ke folder Pictures/TakeGrid
+      await ms.saveFile(
+        tempFilePath: tempFile.path,
+        dirType: DirType.download,
+        dirName: DirType.download.defaults,
       );
 
-      if (result['isSuccess'] == true) {
-        return ExportResult(success: true, path: filename);
-      } else {
-        return ExportResult(success: false, error: 'Save gagal: ${result['errorMessage']}');
-      }
+      // Hapus temp
+      try {
+        await tempFile.delete();
+      } catch (_) {}
+
+      return ExportResult(success: true, path: filename);
     } catch (e) {
       debugPrint('saveToGallery error: $e');
       return ExportResult(success: false, error: e.toString());
