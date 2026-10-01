@@ -2,13 +2,40 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'grid_template.dart';
 
+enum BackgroundType {
+  solid('Warna Solid'),
+  gradient('Gradasi'),
+  blurredImage('Blur Foto');
+
+  final String label;
+  const BackgroundType(this.label);
+}
+
+enum GridRatio {
+  square('1:1', 1.0),
+  portrait34('3:4', 3 / 4),
+  landscape43('4:3', 4 / 3),
+  portrait45('4:5', 4 / 5),
+  landscape54('5:4', 5 / 4),
+  portrait916('9:16', 9 / 16),
+  landscape169('16:9', 16 / 9),
+  portrait23('2:3', 2 / 3),
+  landscape32('3:2', 3 / 2),
+  story('Story 9:16', 9 / 16),
+  post('Post 4:5', 4 / 5);
+
+  final String label;
+  final double value;
+  const GridRatio(this.label, this.value);
+}
+
 enum OverlayType { text, sticker, emoji }
 
 class OverlayItem {
   final String id;
   OverlayType type;
-  String content; // text/emoji/asset path
-  Offset position; // relative (0..1)
+  String content;
+  Offset position;
   double scale;
   double rotation;
   Color color;
@@ -45,11 +72,11 @@ class OverlayItem {
 }
 
 class CellTransform {
-  double zoom; // 1.0 = normal, >1 = zoom in
-  double rotation; // radians
+  double zoom;
+  double rotation;
   bool flipH;
   bool flipV;
-  Offset offset; // pan offset dalam persen (-0.5..0.5)
+  Offset offset;
 
   CellTransform({
     this.zoom = 1.0,
@@ -82,45 +109,18 @@ class CellTransform {
   }
 }
 
-enum BackgroundType {
-  solid('Warna Solid'),
-  gradient('Gradasi'),
-  blurredImage('Blur Foto');
-
-  final String label;
-  const BackgroundType(this.label);
-}
-
-enum GridRatio {
-  square('1:1', 1.0),
-  portrait34('3:4', 3 / 4),
-  landscape43('4:3', 4 / 3),
-  portrait45('4:5', 4 / 5),
-  landscape54('5:4', 5 / 4),
-  portrait916('9:16', 9 / 16),
-  landscape169('16:9', 16 / 9),
-  portrait23('2:3', 2 / 3),
-  landscape32('3:2', 3 / 2),
-  story('Story 9:16', 9 / 16),
-  post('Post 4:5', 4 / 5);
-
-  final String label;
-  final double value;
-  const GridRatio(this.label, this.value);
-}
-
 class GridProject {
   GridTemplate template;
-  List<String?> imagePaths; // per cell, null kalau belum dipilih
+  List<String?> imagePaths;
   double borderWidth;
   Color borderColor;
   Color backgroundColor;
   Color? gradientEndColor;
   BackgroundType backgroundType;
-  List<CellTransform> transforms;
-  List<OverlayItem> overlays;
   GridRatio ratio;
   double cornerRadius;
+  List<CellTransform> transforms;
+  List<OverlayItem> overlays;
 
   GridProject({
     required this.template,
@@ -131,11 +131,12 @@ class GridProject {
     this.gradientEndColor,
     this.backgroundType = BackgroundType.solid,
     List<CellTransform>? transforms,
+    List<OverlayItem>? overlays,
     this.ratio = GridRatio.square,
     this.cornerRadius = 0,
   })  : imagePaths = imagePaths ?? List.filled(template.cellCount, null),
-        transforms = transforms ??
-            List.generate(template.cellCount, (_) => CellTransform()),
+        transforms =
+            transforms ?? List.generate(template.cellCount, (_) => CellTransform()),
         overlays = overlays ?? [];
 
   bool get isComplete =>
@@ -147,30 +148,5 @@ class GridProject {
     if (index >= 0 && index < imagePaths.length) {
       imagePaths[index] = path;
     }
-  }
-
-  GridProject copyWith({
-    GridTemplate? template,
-    List<String?>? imagePaths,
-    double? borderWidth,
-    Color? borderColor,
-    Color? backgroundColor,
-    GridRatio? ratio,
-    double? cornerRadius,
-    List<CellTransform>? transforms,
-    List<OverlayItem>? overlays,
-  }) {
-    final copy = GridProject(
-      template: template ?? this.template,
-      imagePaths: imagePaths ?? List.from(this.imagePaths),
-      borderWidth: borderWidth ?? this.borderWidth,
-      borderColor: borderColor ?? this.borderColor,
-      backgroundColor: backgroundColor ?? this.backgroundColor,
-      ratio: ratio ?? this.ratio,
-    );
-    copy.cornerRadius = cornerRadius ?? this.cornerRadius;
-    copy.transforms = transforms ?? List.from(this.transforms);
-    copy.overlays = overlays ?? List.from(this.overlays);
-    return copy;
   }
 }
