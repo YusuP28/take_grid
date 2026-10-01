@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/home/home_screen.dart';
 
 void main() {
   runApp(const TakeGridApp());
@@ -22,26 +23,3 @@ class TakeGridApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Take Grid')),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.grid_on, size: 80),
-            SizedBox(height: 16),
-            Text('Take Grid — Coming Soon', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 8),
-            Text('Fase 2 selesai. Fase 3: Grid Renderer.',
-                style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-}
