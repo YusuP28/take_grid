@@ -10,3 +10,7 @@
 
 # photo_manager
 -keep class com.fluttercandies.photo_manager.** { *; }
+
+# gal (gallery saver)
+-keep class studio.midoridesign.gal.** { *; }
+-keep class com.android.gallery3d.** { *; }
