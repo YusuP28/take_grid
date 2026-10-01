@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../models/grid_project.dart';
@@ -189,6 +190,69 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  void _showCornerSlider() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Sudut Melengkung',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.rounded_corner, size: 18),
+                  Expanded(
+                    child: Slider(
+                      value: _project.cornerRadius,
+                      min: 0,
+                      max: 30,
+                      divisions: 30,
+                      label: '${_project.cornerRadius.round()}',
+                      onChanged: (v) {
+                        setLocal(() {});
+                        setState(() => _project.cornerRadius = v);
+                      },
+                    ),
+                  ),
+                  Text('${_project.cornerRadius.round()}',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareResult() async {
+    try {
+      final pngBytes = await ExportService().captureWidget(_exportKey);
+      if (pngBytes == null) throw Exception('Gagal capture');
+
+      final file = await ExportService().saveToTempFile(
+        pngBytes: pngBytes,
+        format: _format,
+        quality: _quality,
+      );
+      if (file == null) throw Exception('Gagal simpan temp');
+
+      // ignore: deprecated_member_use
+      await Share.shareXFiles([XFile(file.path)], text: 'Take Grid');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Share gagal: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _showExportDialog() async {
     if (!_project.isComplete) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,60 +262,78 @@ class _EditorScreenState extends State<EditorScreen> {
       return;
     }
 
+    ExportFormat localFormat = _format;
+    ExportQuality localQuality = _quality;
+
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('Export'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Format', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              SegmentedButton<ExportFormat>(
-                segments: const [
-                  ButtonSegment(value: ExportFormat.jpg, label: Text('JPG')),
-                  ButtonSegment(value: ExportFormat.png, label: Text('PNG')),
-                ],
-                selected: {_format},
-                onSelectionChanged: (s) {
-                  setLocal(() {});
-                  _format = s.first;
-                },
-              ),
-              const SizedBox(height: 16),
-              const Text('Kualitas', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              DropdownButton<ExportQuality>(
-                value: _quality,
-                isExpanded: true,
-                items: ExportQuality.values
-                    .map((q) => DropdownMenuItem(
-                          value: q,
-                          child: Text('${q.label} (${q.px}px)'),
-                        ))
-                    .toList(),
-                onChanged: (q) {
-                  if (q != null) {
-                    setLocal(() {});
-                    _quality = q;
-                  }
-                },
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Format',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Center(child: Text('JPG')),
+                        selected: localFormat == ExportFormat.jpg,
+                        onSelected: (_) {
+                          setLocal(() => localFormat = ExportFormat.jpg);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Center(child: Text('PNG')),
+                        selected: localFormat == ExportFormat.png,
+                        onSelected: (_) {
+                          setLocal(() => localFormat = ExportFormat.png);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text('Kualitas',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...ExportQuality.values.map((q) => RadioListTile<ExportQuality>(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('${q.label} (${q.px}px)'),
+                      value: q,
+                      groupValue: localQuality,
+                      onChanged: (v) {
+                        if (v != null) {
+                          setLocal(() => localQuality = v);
+                        }
+                      },
+                    )),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Batal'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () {
+                _format = localFormat;
+                _quality = localQuality;
                 Navigator.pop(ctx);
                 _doExport();
               },
-              child: const Text('Export'),
+              icon: const Icon(Icons.save_alt),
+              label: const Text('Export'),
             ),
           ],
         ),
@@ -341,6 +423,11 @@ class _EditorScreenState extends State<EditorScreen> {
             onPressed: _pickMultipleImages,
           ),
           IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Bagikan',
+            onPressed: _exporting ? null : _shareResult,
+          ),
+          IconButton(
             icon: _exporting
                 ? const SizedBox(
                     width: 18, height: 18,
@@ -370,6 +457,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     backgroundColor: _project.backgroundColor,
                     cellColor: scheme.surfaceContainerHigh,
                     ratio: _project.ratio,
+                    cornerRadius: _project.cornerRadius,
                   ),
                 ),
               ),
@@ -482,6 +570,7 @@ class _EditorScreenState extends State<EditorScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _toolBtn(Icons.line_weight, 'Border', _showBorderSlider),
+              _toolBtn(Icons.rounded_corner, 'Sudut', _showCornerSlider),
               _toolBtn(Icons.palette_outlined, 'Warna',
                   () => _showColorPicker(forBorder: false)),
               _toolBtn(Icons.crop, 'Rasio', _showRatioPicker),

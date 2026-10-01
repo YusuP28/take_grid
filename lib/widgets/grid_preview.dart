@@ -12,6 +12,7 @@ class GridPreview extends StatelessWidget {
   final Color cellColor;
   final GridRatio ratio;
   final double? fixedHeight;
+  final double cornerRadius;
 
   const GridPreview({
     super.key,
@@ -23,6 +24,7 @@ class GridPreview extends StatelessWidget {
     this.cellColor = const Color(0xFFE0E0E0),
     this.ratio = GridRatio.square,
     this.fixedHeight,
+    this.cornerRadius = 0,
   });
 
   @override
@@ -47,9 +49,12 @@ class GridPreview extends StatelessWidget {
                   top: cell.y * h + borderWidth / 2,
                   width: cell.w * w - borderWidth,
                   height: cell.h * h - borderWidth,
-                  child: Container(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                    child: Container(
                     decoration: BoxDecoration(
                       color: path == null ? cellColor : null,
+                      borderRadius: BorderRadius.circular(cornerRadius),
                       border: borderWidth > 0
                           ? Border.all(color: borderColor, width: borderWidth)
                           : null,
@@ -63,6 +68,7 @@ class GridPreview extends StatelessWidget {
                                 Container(color: cellColor),
                           )
                         : null,
+                  ),
                   ),
                 );
               }).toList(),

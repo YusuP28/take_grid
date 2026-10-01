@@ -8,7 +8,11 @@ enum GridRatio {
   portrait45('4:5', 4 / 5),
   landscape54('5:4', 5 / 4),
   portrait916('9:16', 9 / 16),
-  landscape169('16:9', 16 / 9);
+  landscape169('16:9', 16 / 9),
+  portrait23('2:3', 2 / 3),
+  landscape32('3:2', 3 / 2),
+  story('Story 9:16', 9 / 16),
+  post('Post 4:5', 4 / 5);
 
   final String label;
   final double value;
@@ -22,6 +26,7 @@ class GridProject {
   Color borderColor;
   Color backgroundColor;
   GridRatio ratio;
+  double cornerRadius;
 
   GridProject({
     required this.template,
@@ -30,6 +35,7 @@ class GridProject {
     this.borderColor = Colors.white,
     this.backgroundColor = Colors.white,
     this.ratio = GridRatio.square,
+    this.cornerRadius = 0,
   }) : imagePaths = imagePaths ?? List.filled(template.cellCount, null);
 
   bool get isComplete =>
@@ -50,6 +56,7 @@ class GridProject {
     Color? borderColor,
     Color? backgroundColor,
     GridRatio? ratio,
+    double? cornerRadius,
   }) {
     return GridProject(
       template: template ?? this.template,
@@ -58,6 +65,6 @@ class GridProject {
       borderColor: borderColor ?? this.borderColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       ratio: ratio ?? this.ratio,
-    );
+    )..cornerRadius = cornerRadius ?? this.cornerRadius;
   }
 }
