@@ -18,7 +18,6 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   late GridProject _project;
   final _picker = ImagePicker();
-  int? _activeCell; // cell yang sedang dipilih untuk diisi
 
   @override
   void initState() {
@@ -34,10 +33,8 @@ class _EditorScreenState extends State<EditorScreen> {
         maxWidth: 2048,
       );
       if (f == null) return;
-      setState(() {
-        _project.setImage(index, f.path);
-        _activeCell = null;
-      });
+      if (!mounted) return;
+      setState(() => _project.setImage(index, f.path));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,9 +51,8 @@ class _EditorScreenState extends State<EditorScreen> {
         maxWidth: 2048,
       );
       if (files.isEmpty) return;
-
+      if (!mounted) return;
       setState(() {
-        // Isi cell kosong dulu, lalu overwrite dari awal
         int idx = 0;
         for (final f in files) {
           if (idx >= _project.template.cellCount) break;
@@ -75,6 +71,14 @@ class _EditorScreenState extends State<EditorScreen> {
 
   void _clearCell(int index) {
     setState(() => _project.setImage(index, null));
+  }
+
+  void _clearAll() {
+    setState(() {
+      for (int i = 0; i < _project.imagePaths.length; i++) {
+        _project.setImage(i, null);
+      }
+    });
   }
 
   void _showBorderSlider() {
@@ -179,6 +183,24 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  Widget _toolBtn(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22),
+            const SizedBox(height: 2),
+            Text(label, style: const TextStyle(fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -207,7 +229,6 @@ class _EditorScreenState extends State<EditorScreen> {
       ),
       body: Column(
         children: [
-          // Preview area
           Expanded(
             flex: 5,
             child: Container(
@@ -226,8 +247,6 @@ class _EditorScreenState extends State<EditorScreen> {
               ),
             ),
           ),
-
-          // Cell picker + info
           Expanded(
             flex: 4,
             child: Container(
@@ -243,20 +262,13 @@ class _EditorScreenState extends State<EditorScreen> {
                         const Spacer(),
                         if (filled > 0)
                           TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                for (int i = 0; i < _project.imagePaths.length; i++) {
-                                  _project.setImage(i, null);
-                                }
-                              });
-                            },
+                            onPressed: _clearAll,
                             icon: const Icon(Icons.clear_all, size: 16),
                             label: const Text('Kosongkan'),
                           ),
                       ],
                     ),
                   ),
-                  // Cell grid picker
                   Expanded(
                     child: GridView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -288,7 +300,6 @@ class _EditorScreenState extends State<EditorScreen> {
                                     fit: StackFit.expand,
                                     children: [
                                       Image.file(
-                                        // ignore: avoid_slow_async_io
                                         File(path),
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => const Icon(
@@ -354,4 +365,4 @@ class _EditorScreenState extends State<EditorScreen> {
       ),
     );
   }
-
+}
