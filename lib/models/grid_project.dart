@@ -160,16 +160,17 @@ class GridProject {
     List<CellTransform>? transforms,
     List<OverlayItem>? overlays,
   }) {
-    return GridProject(
+    final copy = GridProject(
       template: template ?? this.template,
       imagePaths: imagePaths ?? List.from(this.imagePaths),
       borderWidth: borderWidth ?? this.borderWidth,
       borderColor: borderColor ?? this.borderColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       ratio: ratio ?? this.ratio,
-    )
-      ..cornerRadius = cornerRadius ?? this.cornerRadius
-      ..transforms = transforms ?? List.from(this.transforms)
-      ..overlays = overlays ?? List.from(this.overlays);
+    );
+    copy.cornerRadius = cornerRadius ?? this.cornerRadius;
+    copy.transforms = transforms ?? List.from(this.transforms);
+    copy.overlays = overlays ?? List.from(this.overlays);
+    return copy;
   }
 }

@@ -306,6 +306,11 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
             ],
           ),
         );
+      case FreeStyleType.sticker:
+        return Text(
+          item.content,
+          style: TextStyle(fontSize: 36 * item.scale),
+        );
     }
   }
 
