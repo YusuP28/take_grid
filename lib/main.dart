@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:media_store_plus/media_store_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import 'screens/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Init MediaStore
   MediaStore.appFolder = "TakeGrid";
-  final tempDir = await getTemporaryDirectory();
-  MediaStore.appFolderPath = tempDir.path;
-
   runApp(const TakeGridApp());
 }
 
