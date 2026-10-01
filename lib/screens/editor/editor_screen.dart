@@ -1006,6 +1006,13 @@ class _EditorScreenState extends State<EditorScreen> {
                     cornerRadius: _project.cornerRadius,
                     transforms: _project.transforms,
                     overlays: _project.overlays,
+                    onOverlayMove: (idx, pos) {
+                      setState(() {
+                        _project.overlays[idx] =
+                            _project.overlays[idx].copyWith(position: pos);
+                      });
+                    },
+                    onOverlayTap: _editOverlay,
                   ),
                 ),
               ),

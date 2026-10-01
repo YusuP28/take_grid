@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/grid_template.dart';
 import '../editor/editor_screen.dart';
+import '../freestyle/freestyle_screen.dart';
 import '../../widgets/grid_preview.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -36,6 +37,39 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // Tombol Free Style
+          Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.dashboard_customize),
+              ),
+              title: const Text('Free Style Canvas',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Susun foto bebas tanpa grid'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FreeStyleScreen()),
+              ),
+            ),
+          ),
+
+          Text(
+            'Atau Pilih Template',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),

@@ -18,6 +18,8 @@ class GridPreview extends StatelessWidget {
   final double cornerRadius;
   final List<CellTransform>? transforms;
   final List<OverlayItem>? overlays;
+  final void Function(int, Offset)? onOverlayMove;
+  final void Function(int)? onOverlayTap;
 
   const GridPreview({
     super.key,
@@ -34,6 +36,8 @@ class GridPreview extends StatelessWidget {
     this.cornerRadius = 0,
     this.transforms,
     this.overlays,
+    this.onOverlayMove,
+    this.onOverlayTap,
   });
 
   Widget _buildBackground() {
@@ -203,7 +207,7 @@ class GridPreview extends StatelessWidget {
               },
             ),
 
-            // Overlay layer (stiker + teks)
+            // Overlay layer (drag-able)
             if (overlays != null && overlays!.isNotEmpty)
               Positioned.fill(
                 child: LayoutBuilder(
@@ -211,14 +215,36 @@ class GridPreview extends StatelessWidget {
                     final w = constraints.maxWidth;
                     final h = constraints.maxHeight;
                     return Stack(
-                      children: overlays!.map((o) => Positioned(
-                            left: o.position.dx * w - 50 * o.scale,
-                            top: o.position.dy * h - 25 * o.scale,
+                      children: overlays!.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final o = entry.value;
+                        return Positioned(
+                          left: o.position.dx * w - 50 * o.scale,
+                          top: o.position.dy * h - 25 * o.scale,
+                          child: GestureDetector(
+                            onTap: onOverlayTap != null
+                                ? () => onOverlayTap!(idx)
+                                : null,
+                            onPanUpdate: onOverlayMove != null
+                                ? (details) {
+                                    final dx = details.delta.dx / w;
+                                    final dy = details.delta.dy / h;
+                                    onOverlayMove!(
+                                      idx,
+                                      Offset(
+                                        (o.position.dx + dx).clamp(0.0, 1.0),
+                                        (o.position.dy + dy).clamp(0.0, 1.0),
+                                      ),
+                                    );
+                                  }
+                                : null,
                             child: Transform.rotate(
                               angle: o.rotation,
                               child: _buildOverlay(o),
                             ),
-                          )).toList(),
+                          ),
+                        );
+                      }).toList(),
                     );
                   },
                 ),
