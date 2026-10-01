@@ -2,6 +2,48 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'grid_template.dart';
 
+enum OverlayType { text, sticker, emoji }
+
+class OverlayItem {
+  final String id;
+  OverlayType type;
+  String content; // text/emoji/asset path
+  Offset position; // relative (0..1)
+  double scale;
+  double rotation;
+  Color color;
+  double fontSize;
+
+  OverlayItem({
+    required this.id,
+    required this.type,
+    required this.content,
+    this.position = const Offset(0.5, 0.5),
+    this.scale = 1.0,
+    this.rotation = 0.0,
+    this.color = Colors.white,
+    this.fontSize = 24,
+  });
+
+  OverlayItem copyWith({
+    String? content,
+    Offset? position,
+    double? scale,
+    double? rotation,
+    Color? color,
+    double? fontSize,
+  }) => OverlayItem(
+        id: id,
+        type: type,
+        content: content ?? this.content,
+        position: position ?? this.position,
+        scale: scale ?? this.scale,
+        rotation: rotation ?? this.rotation,
+        color: color ?? this.color,
+        fontSize: fontSize ?? this.fontSize,
+      );
+}
+
 class CellTransform {
   double zoom; // 1.0 = normal, >1 = zoom in
   double rotation; // radians
@@ -76,6 +118,7 @@ class GridProject {
   Color? gradientEndColor;
   BackgroundType backgroundType;
   List<CellTransform> transforms;
+  List<OverlayItem> overlays;
   GridRatio ratio;
   double cornerRadius;
 
@@ -92,7 +135,8 @@ class GridProject {
     this.cornerRadius = 0,
   })  : imagePaths = imagePaths ?? List.filled(template.cellCount, null),
         transforms = transforms ??
-            List.generate(template.cellCount, (_) => CellTransform());
+            List.generate(template.cellCount, (_) => CellTransform()),
+        overlays = overlays ?? [];
 
   bool get isComplete =>
       imagePaths.where((p) => p != null).length == template.cellCount;
@@ -114,6 +158,7 @@ class GridProject {
     GridRatio? ratio,
     double? cornerRadius,
     List<CellTransform>? transforms,
+    List<OverlayItem>? overlays,
   }) {
     return GridProject(
       template: template ?? this.template,
@@ -124,6 +169,7 @@ class GridProject {
       ratio: ratio ?? this.ratio,
     )
       ..cornerRadius = cornerRadius ?? this.cornerRadius
-      ..transforms = transforms ?? List.from(this.transforms);
+      ..transforms = transforms ?? List.from(this.transforms)
+      ..overlays = overlays ?? List.from(this.overlays);
   }
 }

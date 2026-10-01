@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../models/grid_project.dart';
@@ -378,6 +379,274 @@ class _EditorScreenState extends State<EditorScreen> {
     }
   }
 
+  void _addText() {
+    final ctrl = TextEditingController();
+    Color color = Colors.white;
+    double size = 24;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Tambah Teks'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Tulis teks...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Warna',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    Colors.white,
+                    Colors.black,
+                    Colors.red,
+                    Colors.yellow,
+                    Colors.green,
+                    Colors.blue,
+                    Colors.purple,
+                    Colors.orange,
+                  ].map((c) => GestureDetector(
+                        onTap: () {
+                          setLocal(() => color = c);
+                        },
+                        child: Container(
+                          width: 32, height: 32,
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: color == c ? Colors.blue : Colors.grey,
+                              width: color == c ? 3 : 1,
+                            ),
+                          ),
+                        ),
+                      )).toList(),
+                ),
+                const SizedBox(height: 12),
+                const Text('Ukuran',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Slider(
+                  value: size,
+                  min: 12,
+                  max: 72,
+                  divisions: 30,
+                  label: '${size.round()}',
+                  onChanged: (v) => setLocal(() => size = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (ctrl.text.trim().isEmpty) return;
+                setState(() {
+                  _project.overlays.add(OverlayItem(
+                    id: const Uuid().v4(),
+                    type: OverlayType.text,
+                    content: ctrl.text.trim(),
+                    color: color,
+                    fontSize: size,
+                  ));
+                });
+                Navigator.pop(ctx);
+              },
+              child: const Text('Tambah'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addEmoji() {
+    final emojis = [
+      '😀', '😂', '😍', '🥰', '😎', '🤔', '😴', '😭', '😡', '🤯',
+      '❤️', '💕', '💖', '✨', '⭐', '🌟', '🔥', '💯', '🎉', '🎊',
+      '🌈', '☀️', '🌙', '⚡', '🌸', '🌺', '🍕', '🍔', '☕', '🍰',
+      '🐱', '🐶', '🦄', '🐼', '🦋', '🌻', '🎈', '🎁', '👍', '👏',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Pilih Emoji',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 8,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                ),
+                itemCount: emojis.length,
+                itemBuilder: (_, i) => GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _project.overlays.add(OverlayItem(
+                        id: const Uuid().v4(),
+                        type: OverlayType.emoji,
+                        content: emojis[i],
+                        fontSize: 36,
+                      ));
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: Center(
+                    child: Text(emojis[i], style: const TextStyle(fontSize: 28)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editOverlay(int index) {
+    final o = _project.overlays[index];
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text('Edit ${o.type.name}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (o.type == OverlayType.text)
+                  TextField(
+                    controller: TextEditingController(text: o.content),
+                    decoration: const InputDecoration(labelText: 'Teks'),
+                    onChanged: (v) {
+                      setState(() => o.content = v);
+                    },
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text('Skala'),
+                    Expanded(
+                      child: Slider(
+                        value: o.scale,
+                        min: 0.5,
+                        max: 3.0,
+                        divisions: 25,
+                        onChanged: (v) {
+                          setLocal(() {});
+                          setState(() => o.scale = v);
+                        },
+                      ),
+                    ),
+                    Text(o.scale.toStringAsFixed(1)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Rotasi'),
+                    Expanded(
+                      child: Slider(
+                        value: o.rotation,
+                        min: -3.14159,
+                        max: 3.14159,
+                        divisions: 12,
+                        onChanged: (v) {
+                          setLocal(() {});
+                          setState(() => o.rotation = v);
+                        },
+                      ),
+                    ),
+                    Text('${(o.rotation * 180 / 3.14159).round()}°'),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('X'),
+                    Expanded(
+                      child: Slider(
+                        value: o.position.dx,
+                        min: 0,
+                        max: 1,
+                        onChanged: (v) {
+                          setLocal(() {});
+                          setState(() {
+                            _project.overlays[index] = o.copyWith(
+                              position: Offset(v, o.position.dy),
+                            );
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Y'),
+                    Expanded(
+                      child: Slider(
+                        value: o.position.dy,
+                        min: 0,
+                        max: 1,
+                        onChanged: (v) {
+                          setLocal(() {});
+                          setState(() {
+                            _project.overlays[index] = o.copyWith(
+                              position: Offset(o.position.dx, v),
+                            );
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() => _project.overlays.removeAt(index));
+                Navigator.pop(ctx);
+              },
+              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCellMenu(int index) {
     showModalBottomSheet(
       context: context,
@@ -736,6 +1005,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     ratio: _project.ratio,
                     cornerRadius: _project.cornerRadius,
                     transforms: _project.transforms,
+                    overlays: _project.overlays,
                   ),
                 ),
               ),
@@ -853,9 +1123,8 @@ class _EditorScreenState extends State<EditorScreen> {
               _toolBtn(Icons.rounded_corner, 'Sudut', _showCornerSlider),
               _toolBtn(Icons.palette_outlined, 'Warna',
                   () => _showColorPicker(forBorder: false)),
-              _toolBtn(Icons.crop, 'Rasio', _showRatioPicker),
-              _toolBtn(Icons.border_color, 'Garis',
-                  () => _showColorPicker(forBorder: true)),
+              _toolBtn(Icons.text_fields, 'Teks', _addText),
+              _toolBtn(Icons.emoji_emotions_outlined, 'Emoji', _addEmoji),
             ],
           ),
         ),

@@ -17,6 +17,7 @@ class GridPreview extends StatelessWidget {
   final double? fixedHeight;
   final double cornerRadius;
   final List<CellTransform>? transforms;
+  final List<OverlayItem>? overlays;
 
   const GridPreview({
     super.key,
@@ -32,6 +33,7 @@ class GridPreview extends StatelessWidget {
     this.fixedHeight,
     this.cornerRadius = 0,
     this.transforms,
+    this.overlays,
   });
 
   Widget _buildBackground() {
@@ -76,6 +78,35 @@ class GridPreview extends StatelessWidget {
             ),
           ],
         );
+    }
+  }
+
+  Widget _buildOverlay(OverlayItem o) {
+    switch (o.type) {
+      case OverlayType.emoji:
+        return Text(o.content,
+            style: TextStyle(fontSize: o.fontSize * o.scale));
+      case OverlayType.text:
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            o.content,
+            style: TextStyle(
+              fontSize: o.fontSize * o.scale,
+              color: o.color,
+              fontWeight: FontWeight.bold,
+              shadows: const [
+                Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      case OverlayType.sticker:
+        // Placeholder — bisa diperluas dengan asset
+        return Text(o.content,
+            style: TextStyle(fontSize: o.fontSize * o.scale));
     }
   }
 
@@ -171,6 +202,27 @@ class GridPreview extends StatelessWidget {
                 );
               },
             ),
+
+            // Overlay layer (stiker + teks)
+            if (overlays != null && overlays!.isNotEmpty)
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final w = constraints.maxWidth;
+                    final h = constraints.maxHeight;
+                    return Stack(
+                      children: overlays!.map((o) => Positioned(
+                            left: o.position.dx * w - 50 * o.scale,
+                            top: o.position.dy * h - 25 * o.scale,
+                            child: Transform.rotate(
+                              angle: o.rotation,
+                              child: _buildOverlay(o),
+                            ),
+                          )).toList(),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),
