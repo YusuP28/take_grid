@@ -5,6 +5,7 @@ import 'screens/home/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaStore.appFolder = "TakeGrid";
+  await MediaStore.ensureInitialized();
   runApp(const TakeGridApp());
 }
 
