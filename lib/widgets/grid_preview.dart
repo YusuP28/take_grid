@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/grid_template.dart';
 import '../models/grid_project.dart';
 
-class GridPreview extends StatelessWidget {
+class GridPreview extends StatefulWidget {
   final GridTemplate template;
   final List<String?> imagePaths;
   final double borderWidth;
@@ -40,10 +40,19 @@ class GridPreview extends StatelessWidget {
     this.onOverlayTap,
   });
 
+  @override
+  State<GridPreview> createState() => _GridPreviewState();
+}
+
+class _GridPreviewState extends State<GridPreview> {
+  // Local state untuk drag — biar real-time tanpa rebuild parent
+  final Map<int, Offset> _dragPositions = {};
+  int? _draggingIndex;
+
   Widget _buildBackground() {
-    switch (backgroundType) {
+    switch (widget.backgroundType) {
       case BackgroundType.solid:
-        return Container(color: backgroundColor);
+        return Container(color: widget.backgroundColor);
 
       case BackgroundType.gradient:
         return Container(
@@ -52,21 +61,20 @@ class GridPreview extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                backgroundColor,
-                gradientEndColor ?? backgroundColor.withOpacity(0.5),
+                widget.backgroundColor,
+                widget.gradientEndColor ?? widget.backgroundColor.withOpacity(0.5),
               ],
             ),
           ),
         );
 
       case BackgroundType.blurredImage:
-        // Ambil foto pertama, blur
-        final firstImage = imagePaths.firstWhere(
+        final firstImage = widget.imagePaths.firstWhere(
           (p) => p != null,
           orElse: () => null,
         );
         if (firstImage == null) {
-          return Container(color: backgroundColor);
+          return Container(color: widget.backgroundColor);
         }
         return Stack(
           fit: StackFit.expand,
@@ -74,7 +82,7 @@ class GridPreview extends StatelessWidget {
             Image.file(
               File(firstImage),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: backgroundColor),
+              errorBuilder: (_, __, ___) => Container(color: widget.backgroundColor),
             ),
             BackdropFilter(
               filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
@@ -108,25 +116,23 @@ class GridPreview extends StatelessWidget {
           ),
         );
       case OverlayType.sticker:
-        // Placeholder — bisa diperluas dengan asset
         return Text(o.content,
             style: TextStyle(fontSize: o.fontSize * o.scale));
     }
   }
 
   Widget _buildTransformedImage(String path, int index) {
-    final t = (transforms != null && index < transforms!.length)
-        ? transforms![index]
+    final t = (widget.transforms != null && index < widget.transforms!.length)
+        ? widget.transforms![index]
         : CellTransform();
 
     Widget img = Image.file(
       File(path),
       fit: BoxFit.cover,
       gaplessPlayback: true,
-      errorBuilder: (_, __, ___) => Container(color: cellColor),
+      errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
     );
 
-    // Flip
     if (t.flipH || t.flipV) {
       img = Transform(
         alignment: Alignment.center,
@@ -136,23 +142,20 @@ class GridPreview extends StatelessWidget {
       );
     }
 
-    // Zoom
     if (t.zoom != 1.0) {
       img = Transform.scale(scale: t.zoom, child: img);
     }
 
-    // Rotation
     if (t.rotation != 0.0) {
       img = Transform.rotate(angle: t.rotation, child: img);
     }
 
-    // Offset (pan)
     if (t.offset != Offset.zero) {
       img = FractionalTranslation(translation: t.offset, child: img);
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(cornerRadius),
+      borderRadius: BorderRadius.circular(widget.cornerRadius),
       child: img,
     );
   }
@@ -160,103 +163,121 @@ class GridPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = AspectRatio(
-      aspectRatio: ratio.value,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(cornerRadius > 0 ? 0 : 0),
-        child: Stack(
-          children: [
-            // Background layer
-            Positioned.fill(child: _buildBackground()),
+      aspectRatio: widget.ratio.value,
+      child: Stack(
+        children: [
+          Positioned.fill(child: _buildBackground()),
 
-            // Grid cells
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final w = constraints.maxWidth;
-                final h = constraints.maxHeight;
+          // Grid cells
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final w = constraints.maxWidth;
+              final h = constraints.maxHeight;
 
-                return Stack(
-                  children: template.cells.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final cell = entry.value;
-                    final path = i < imagePaths.length ? imagePaths[i] : null;
+              return Stack(
+                children: widget.template.cells.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final cell = entry.value;
+                  final path = i < widget.imagePaths.length
+                      ? widget.imagePaths[i]
+                      : null;
 
-                    return Positioned(
-                      left: cell.x * w + borderWidth / 2,
-                      top: cell.y * h + borderWidth / 2,
-                      width: cell.w * w - borderWidth,
-                      height: cell.h * h - borderWidth,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(cornerRadius),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: path == null ? cellColor : null,
-                            borderRadius: BorderRadius.circular(cornerRadius),
-                            border: borderWidth > 0
-                                ? Border.all(
-                                    color: borderColor, width: borderWidth)
-                                : null,
-                          ),
-                          child: path != null
-                              ? _buildTransformedImage(path, i)
+                  return Positioned(
+                    left: cell.x * w + widget.borderWidth / 2,
+                    top: cell.y * h + widget.borderWidth / 2,
+                    width: cell.w * w - widget.borderWidth,
+                    height: cell.h * h - widget.borderWidth,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(widget.cornerRadius),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: path == null ? widget.cellColor : null,
+                          borderRadius: BorderRadius.circular(widget.cornerRadius),
+                          border: widget.borderWidth > 0
+                              ? Border.all(
+                                  color: widget.borderColor,
+                                  width: widget.borderWidth)
                               : null,
                         ),
+                        child: path != null
+                            ? _buildTransformedImage(path, i)
+                            : null,
                       ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
 
-            // Overlay layer (drag-able)
-            if (overlays != null && overlays!.isNotEmpty)
-              Positioned.fill(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final w = constraints.maxWidth;
-                    final h = constraints.maxHeight;
-                    return Stack(
-                      children: overlays!.asMap().entries.map((entry) {
-                        final idx = entry.key;
-                        final o = entry.value;
-                        return Positioned(
-                          left: o.position.dx * w - 50 * o.scale,
-                          top: o.position.dy * h - 25 * o.scale,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: onOverlayTap != null
-                                ? () => onOverlayTap!(idx)
-                                : null,
-                            onPanUpdate: onOverlayMove != null
-                                ? (details) {
-                                    final dx = details.delta.dx / w;
-                                    final dy = details.delta.dy / h;
-                                    onOverlayMove!(
-                                      idx,
-                                      Offset(
-                                        (o.position.dx + dx).clamp(0.0, 1.0),
-                                        (o.position.dy + dy).clamp(0.0, 1.0),
-                                      ),
-                                    );
-                                  }
-                                : null,
-                            child: Transform.rotate(
-                              angle: o.rotation,
-                              child: _buildOverlay(o),
-                            ),
+          // Overlay layer (drag real-time via local state)
+          if (widget.overlays != null && widget.overlays!.isNotEmpty)
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  final h = constraints.maxHeight;
+                  return Stack(
+                    children:
+                        widget.overlays!.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final o = entry.value;
+
+                      // Gunakan drag local position kalau sedang drag
+                      final pos = _dragPositions[idx] ?? o.position;
+
+                      return Positioned(
+                        left: pos.dx * w - 50 * o.scale,
+                        top: pos.dy * h - 25 * o.scale,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: widget.onOverlayTap != null
+                              ? () => widget.onOverlayTap!(idx)
+                              : null,
+                          onPanStart: (_) {
+                            setState(() => _draggingIndex = idx);
+                          },
+                          onPanUpdate: (details) {
+                            setState(() {
+                              final newPos = Offset(
+                                ((_dragPositions[idx]?.dx ?? o.position.dx) +
+                                        details.delta.dx / w)
+                                    .clamp(0.0, 1.0),
+                                ((_dragPositions[idx]?.dy ?? o.position.dy) +
+                                        details.delta.dy / h)
+                                    .clamp(0.0, 1.0),
+                              );
+                              _dragPositions[idx] = newPos;
+                            });
+                          },
+                          onPanEnd: (_) {
+                            final finalPos = _dragPositions[idx];
+                            if (finalPos != null &&
+                                widget.onOverlayMove != null) {
+                              widget.onOverlayMove!(idx, finalPos);
+                            }
+                            setState(() {
+                              _dragPositions.remove(idx);
+                              _draggingIndex = null;
+                            });
+                          },
+                          child: Transform.rotate(
+                            angle: o.rotation,
+                            child: _buildOverlay(o),
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
 
-    if (fixedHeight != null) {
-      return SizedBox(height: fixedHeight, child: content);
+    if (widget.fixedHeight != null) {
+      return SizedBox(height: widget.fixedHeight, child: content);
     }
     return content;
   }

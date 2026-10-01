@@ -98,41 +98,60 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   void _showBorderSlider() {
+    bool sliding = false;
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Tebal Border',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              Row(
+        builder: (ctx, setLocal) {
+          final scheme = Theme.of(ctx).colorScheme;
+          return AnimatedOpacity(
+            duration: const Duration(milliseconds: 100),
+            opacity: sliding ? 0.5 : 1.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.line_weight, size: 18),
-                  Expanded(
-                    child: Slider(
-                      value: _project.borderWidth,
-                      min: 0,
-                      max: 20,
-                      divisions: 40,
-                      label: '${_project.borderWidth.toStringAsFixed(1)}px',
-                      onChanged: (v) {
-                        setLocal(() {});
-                        setState(() => _project.borderWidth = v);
-                      },
-                    ),
+                  Center(child: Container(width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2)))),
+                  const Text('Tebal Border',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.line_weight, size: 18),
+                      Expanded(
+                        child: Slider(
+                          value: _project.borderWidth,
+                          min: 0,
+                          max: 20,
+                          divisions: 40,
+                          label: '${_project.borderWidth.toStringAsFixed(1)}px',
+                          onChangeStart: (_) => setLocal(() => sliding = true),
+                          onChanged: (v) {
+                            setState(() => _project.borderWidth = v);
+                          },
+                          onChangeEnd: (_) => setLocal(() => sliding = false),
+                        ),
+                      ),
+                      Text('${_project.borderWidth.toStringAsFixed(1)}px',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  Text('${_project.borderWidth.toStringAsFixed(1)}px',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -325,41 +344,60 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   void _showCornerSlider() {
+    bool sliding = false;
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Sudut Melengkung',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              Row(
+        builder: (ctx, setLocal) {
+          final scheme = Theme.of(ctx).colorScheme;
+          return AnimatedOpacity(
+            duration: const Duration(milliseconds: 100),
+            opacity: sliding ? 0.5 : 1.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.rounded_corner, size: 18),
-                  Expanded(
-                    child: Slider(
-                      value: _project.cornerRadius,
-                      min: 0,
-                      max: 30,
-                      divisions: 30,
-                      label: '${_project.cornerRadius.round()}',
-                      onChanged: (v) {
-                        setLocal(() {});
-                        setState(() => _project.cornerRadius = v);
-                      },
-                    ),
+                  Center(child: Container(width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2)))),
+                  const Text('Sudut Melengkung',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.rounded_corner, size: 18),
+                      Expanded(
+                        child: Slider(
+                          value: _project.cornerRadius,
+                          min: 0,
+                          max: 30,
+                          divisions: 30,
+                          label: '${_project.cornerRadius.round()}',
+                          onChangeStart: (_) => setLocal(() => sliding = true),
+                          onChanged: (v) {
+                            setState(() => _project.cornerRadius = v);
+                          },
+                          onChangeEnd: (_) => setLocal(() => sliding = false),
+                        ),
+                      ),
+                      Text('${_project.cornerRadius.round()}',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  Text('${_project.cornerRadius.round()}',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
