@@ -4,13 +4,13 @@
 
 -keep class com.tekartik.sqflite.** { *; }
 -keep class com.fluttercandies.** { *; }
-
-# image_picker
 -keep class io.flutter.plugins.imagepicker.** { *; }
-
-# photo_manager
 -keep class com.fluttercandies.photo_manager.** { *; }
 
-# gal (gallery saver)
--keep class studio.midoridesign.gal.** { *; }
--keep class com.android.gallery3d.** { *; }
+# image_gallery_saver
+-keep class com.example.imagegallerysaver.** { *; }
+-keep class com.example.image_gallery_saver.** { *; }
+-dontwarn com.example.**
+
+# permission_handler
+-keep class com.baseflow.permissionhandler.** { *; }

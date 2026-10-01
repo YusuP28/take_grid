@@ -8,7 +8,6 @@ import '../../models/grid_template.dart';
 import '../../widgets/grid_preview.dart';
 import '../../services/export_service.dart';
 import 'dart:ui' as ui;
-import 'package:gal/gal.dart';
 
 class EditorScreen extends StatefulWidget {
   final GridTemplate template;

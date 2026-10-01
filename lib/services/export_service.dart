@@ -3,7 +3,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:gal/gal.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
@@ -79,11 +80,19 @@ class ExportService {
         ext = 'png';
       }
 
-      // Save ke galeri via gal
-      final filename = 'TakeGrid_${DateTime.now().millisecondsSinceEpoch}.$ext';
-      await Gal.putImageBytes(output, name: filename);
+      // Save ke galeri via image_gallery_saver
+      final filename = 'TakeGrid_${DateTime.now().millisecondsSinceEpoch}';
+      final result = await ImageGallerySaver.saveImage(
+        output,
+        quality: 100,
+        name: filename,
+      );
 
-      return ExportResult(success: true, path: filename);
+      if (result['isSuccess'] == true) {
+        return ExportResult(success: true, path: filename);
+      } else {
+        return ExportResult(success: false, error: 'Save gagal: ${result['errorMessage']}');
+      }
     } catch (e) {
       debugPrint('saveToGallery error: $e');
       return ExportResult(success: false, error: e.toString());
@@ -131,17 +140,28 @@ class ExportService {
   /// Cek permission galeri
   Future<bool> hasGalleryAccess() async {
     try {
-      return await Gal.hasAccess();
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.status;
+        if (status.isGranted) return true;
+        // Android 13+: photos permission
+        final photos = await Permission.photos.status;
+        return photos.isGranted;
+      }
+      return true;
     } catch (_) {
-      return false;
+      return true;
     }
   }
 
   Future<bool> requestGalleryAccess() async {
     try {
-      return await Gal.requestAccess();
+      if (Platform.isAndroid) {
+        final result = await [Permission.storage, Permission.photos].request();
+        return result.values.any((s) => s.isGranted);
+      }
+      return true;
     } catch (_) {
-      return false;
+      return true;
     }
   }
 }
