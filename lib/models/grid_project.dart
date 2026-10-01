@@ -1,5 +1,44 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'grid_template.dart';
+
+class CellTransform {
+  double zoom; // 1.0 = normal, >1 = zoom in
+  double rotation; // radians
+  bool flipH;
+  bool flipV;
+  Offset offset; // pan offset dalam persen (-0.5..0.5)
+
+  CellTransform({
+    this.zoom = 1.0,
+    this.rotation = 0.0,
+    this.flipH = false,
+    this.flipV = false,
+    this.offset = Offset.zero,
+  });
+
+  CellTransform copyWith({
+    double? zoom,
+    double? rotation,
+    bool? flipH,
+    bool? flipV,
+    Offset? offset,
+  }) => CellTransform(
+        zoom: zoom ?? this.zoom,
+        rotation: rotation ?? this.rotation,
+        flipH: flipH ?? this.flipH,
+        flipV: flipV ?? this.flipV,
+        offset: offset ?? this.offset,
+      );
+
+  void reset() {
+    zoom = 1.0;
+    rotation = 0.0;
+    flipH = false;
+    flipV = false;
+    offset = Offset.zero;
+  }
+}
 
 enum BackgroundType {
   solid('Warna Solid'),
@@ -36,6 +75,7 @@ class GridProject {
   Color backgroundColor;
   Color? gradientEndColor;
   BackgroundType backgroundType;
+  List<CellTransform> transforms;
   GridRatio ratio;
   double cornerRadius;
 
@@ -47,9 +87,12 @@ class GridProject {
     this.backgroundColor = Colors.white,
     this.gradientEndColor,
     this.backgroundType = BackgroundType.solid,
+    List<CellTransform>? transforms,
     this.ratio = GridRatio.square,
     this.cornerRadius = 0,
-  }) : imagePaths = imagePaths ?? List.filled(template.cellCount, null);
+  })  : imagePaths = imagePaths ?? List.filled(template.cellCount, null),
+        transforms = transforms ??
+            List.generate(template.cellCount, (_) => CellTransform());
 
   bool get isComplete =>
       imagePaths.where((p) => p != null).length == template.cellCount;
@@ -70,6 +113,7 @@ class GridProject {
     Color? backgroundColor,
     GridRatio? ratio,
     double? cornerRadius,
+    List<CellTransform>? transforms,
   }) {
     return GridProject(
       template: template ?? this.template,
@@ -78,6 +122,8 @@ class GridProject {
       borderColor: borderColor ?? this.borderColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       ratio: ratio ?? this.ratio,
-    )..cornerRadius = cornerRadius ?? this.cornerRadius;
+    )
+      ..cornerRadius = cornerRadius ?? this.cornerRadius
+      ..transforms = transforms ?? List.from(this.transforms);
   }
 }

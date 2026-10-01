@@ -16,6 +16,7 @@ class GridPreview extends StatelessWidget {
   final GridRatio ratio;
   final double? fixedHeight;
   final double cornerRadius;
+  final List<CellTransform>? transforms;
 
   const GridPreview({
     super.key,
@@ -30,6 +31,7 @@ class GridPreview extends StatelessWidget {
     this.ratio = GridRatio.square,
     this.fixedHeight,
     this.cornerRadius = 0,
+    this.transforms,
   });
 
   Widget _buildBackground() {
@@ -77,6 +79,49 @@ class GridPreview extends StatelessWidget {
     }
   }
 
+  Widget _buildTransformedImage(String path, int index) {
+    final t = (transforms != null && index < transforms!.length)
+        ? transforms![index]
+        : CellTransform();
+
+    Widget img = Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => Container(color: cellColor),
+    );
+
+    // Flip
+    if (t.flipH || t.flipV) {
+      img = Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..scale(t.flipH ? -1.0 : 1.0, t.flipV ? -1.0 : 1.0, 1.0),
+        child: img,
+      );
+    }
+
+    // Zoom
+    if (t.zoom != 1.0) {
+      img = Transform.scale(scale: t.zoom, child: img);
+    }
+
+    // Rotation
+    if (t.rotation != 0.0) {
+      img = Transform.rotate(angle: t.rotation, child: img);
+    }
+
+    // Offset (pan)
+    if (t.offset != Offset.zero) {
+      img = FractionalTranslation(translation: t.offset, child: img);
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(cornerRadius),
+      child: img,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final content = AspectRatio(
@@ -117,13 +162,7 @@ class GridPreview extends StatelessWidget {
                                 : null,
                           ),
                           child: path != null
-                              ? Image.file(
-                                  File(path),
-                                  fit: BoxFit.cover,
-                                  gaplessPlayback: true,
-                                  errorBuilder: (_, __, ___) =>
-                                      Container(color: cellColor),
-                                )
+                              ? _buildTransformedImage(path, i)
                               : null,
                         ),
                       ),

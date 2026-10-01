@@ -378,6 +378,156 @@ class _EditorScreenState extends State<EditorScreen> {
     }
   }
 
+  void _showCellMenu(int index) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Opsi Cell',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Transform'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showTransformDialog(index);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Ganti Foto'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImageForCell(index);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.restart_alt),
+              title: const Text('Reset Transform'),
+              onTap: () {
+                Navigator.pop(ctx);
+                setState(() => _project.transforms[index].reset());
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline,
+                  color: Theme.of(ctx).colorScheme.error),
+              title: Text('Hapus Foto',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _clearCell(index);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTransformDialog(int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final t = _project.transforms[index];
+          return AlertDialog(
+            title: Text('Transform Cell ${index + 1}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Zoom',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      Text('${t.zoom.toStringAsFixed(1)}x'),
+                    ],
+                  ),
+                  Slider(
+                    value: t.zoom,
+                    min: 1.0,
+                    max: 3.0,
+                    divisions: 20,
+                    onChanged: (v) {
+                      setLocal(() {});
+                      setState(() => _project.transforms[index].zoom = v);
+                    },
+                  ),
+                  Row(
+                    children: [
+                      const Text('Rotasi',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      Text('${(t.rotation * 180 / 3.14159).round()}°'),
+                    ],
+                  ),
+                  Slider(
+                    value: t.rotation,
+                    min: -3.14159,
+                    max: 3.14159,
+                    divisions: 12,
+                    onChanged: (v) {
+                      setLocal(() {});
+                      setState(() => _project.transforms[index].rotation = v);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Flip',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      FilterChip(
+                        label: const Text('Horizontal'),
+                        selected: t.flipH,
+                        onSelected: (v) {
+                          setLocal(() {});
+                          setState(
+                              () => _project.transforms[index].flipH = v);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Vertikal'),
+                        selected: t.flipV,
+                        onSelected: (v) {
+                          setLocal(() {});
+                          setState(
+                              () => _project.transforms[index].flipV = v);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  setState(() => _project.transforms[index].reset());
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Reset'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _showExportDialog() async {
     if (!_project.isComplete) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -585,6 +735,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     cellColor: scheme.surfaceContainerHigh,
                     ratio: _project.ratio,
                     cornerRadius: _project.cornerRadius,
+                    transforms: _project.transforms,
                   ),
                 ),
               ),
@@ -625,7 +776,9 @@ class _EditorScreenState extends State<EditorScreen> {
                         final path = _project.imagePaths[i];
                         return GestureDetector(
                           onTap: () => _pickImageForCell(i),
-                          onLongPress: path != null ? () => _clearCell(i) : null,
+                          onLongPress: path != null
+                              ? () => _showCellMenu(i)
+                              : null,
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
