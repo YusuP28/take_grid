@@ -1,0 +1,107 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'release-split'
+        type: choice
+        options:
+          - debug
+          - release-split
+          - release-full
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Determine build mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.build_type }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "mode=release-split" >> $GITHUB_OUTPUT
+          else
+            echo "mode=debug" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Decode keystore (release only)
+        if: steps.mode.outputs.mode != 'debug'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > $RUNNER_TEMP/keystore.jks
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          fi
+
+      - name: Build APK (debug)
+        if: steps.mode.outputs.mode == 'debug'
+        run: flutter build apk --debug
+
+      - name: Build APK (release split-per-abi)
+        if: steps.mode.outputs.mode == 'release-split'
+        run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/debug-info
+
+      - name: Build APK (release full)
+        if: steps.mode.outputs.mode == 'release-full'
+        run: flutter build apk --release --obfuscate --split-debug-info=build/debug-info
+
+      - name: Upload Debug APK
+        if: steps.mode.outputs.mode == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: take-grid-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload Release APKs
+        if: steps.mode.outputs.mode == 'release-split'
+        uses: actions/upload-artifact@v4
+        with:
+          name: take-grid-release-split
+          path: build/app/outputs/flutter-apk/app-*-release.apk
+
+      - name: Upload Release APK (universal)
+        if: steps.mode.outputs.mode == 'release-full'
+        uses: actions/upload-artifact@v4
+        with:
+          name: take-grid-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Attach to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-*-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
