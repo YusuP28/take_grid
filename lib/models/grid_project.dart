@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'grid_template.dart';
 
+enum BackgroundType {
+  solid('Warna Solid'),
+  gradient('Gradasi'),
+  blurredImage('Blur Foto');
+
+  final String label;
+  const BackgroundType(this.label);
+}
+
 enum GridRatio {
   square('1:1', 1.0),
   portrait34('3:4', 3 / 4),
@@ -25,6 +34,8 @@ class GridProject {
   double borderWidth;
   Color borderColor;
   Color backgroundColor;
+  Color? gradientEndColor;
+  BackgroundType backgroundType;
   GridRatio ratio;
   double cornerRadius;
 
@@ -34,6 +45,8 @@ class GridProject {
     this.borderWidth = 4.0,
     this.borderColor = Colors.white,
     this.backgroundColor = Colors.white,
+    this.gradientEndColor,
+    this.backgroundType = BackgroundType.solid,
     this.ratio = GridRatio.square,
     this.cornerRadius = 0,
   }) : imagePaths = imagePaths ?? List.filled(template.cellCount, null);

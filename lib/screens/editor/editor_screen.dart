@@ -129,35 +129,160 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   void _showColorPicker({required bool forBorder}) {
-    Color current = forBorder ? _project.borderColor : _project.backgroundColor;
-    showDialog(
+    if (forBorder) {
+      // Langsung color picker border
+      Color current = _project.borderColor;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Warna Border'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: current,
+              onColorChanged: (c) {
+                setState(() => _project.borderColor = c);
+              },
+              enableAlpha: false,
+              labelTypes: const [],
+              pickerAreaHeightPercent: 0.7,
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          ],
+        ),
+      );
+    } else {
+      // Background dialog: pilih tipe + warna
+      _showBackgroundDialog();
+    }
+  }
+
+  void _showBackgroundDialog() {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(forBorder ? 'Warna Border' : 'Warna Background'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: current,
-            onColorChanged: (c) {
-              setState(() {
-                if (forBorder) {
-                  _project.borderColor = c;
-                } else {
-                  _project.backgroundColor = c;
-                }
-              });
-            },
-            enableAlpha: false,
-            labelTypes: const [],
-            pickerAreaHeightPercent: 0.7,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Background',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: BackgroundType.values.map((t) => ChoiceChip(
+                        label: Text(t.label),
+                        selected: _project.backgroundType == t,
+                        onSelected: (_) {
+                          setState(() => _project.backgroundType = t);
+                          setLocal(() {});
+                        },
+                      )).toList(),
+                ),
+                const SizedBox(height: 16),
+                if (_project.backgroundType == BackgroundType.solid) ...[
+                  const Text('Warna'),
+                  const SizedBox(height: 8),
+                  _colorSwatches(
+                    selectedColor: _project.backgroundColor,
+                    onPick: (c) {
+                      setState(() => _project.backgroundColor = c);
+                      setLocal(() {});
+                    },
+                  ),
+                ],
+                if (_project.backgroundType == BackgroundType.gradient) ...[
+                  const Text('Warna Awal'),
+                  const SizedBox(height: 8),
+                  _colorSwatches(
+                    selectedColor: _project.backgroundColor,
+                    onPick: (c) {
+                      setState(() => _project.backgroundColor = c);
+                      setLocal(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Warna Akhir'),
+                  const SizedBox(height: 8),
+                  _colorSwatches(
+                    selectedColor:
+                        _project.gradientEndColor ?? _project.backgroundColor,
+                    onPick: (c) {
+                      setState(() => _project.gradientEndColor = c);
+                      setLocal(() {});
+                    },
+                  ),
+                ],
+                if (_project.backgroundType == BackgroundType.blurredImage) ...[
+                  const Text('Blur akan diambil dari foto pertama',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Selesai'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
       ),
+    );
+  }
+
+  Widget _colorSwatches({
+    required Color selectedColor,
+    required ValueChanged<Color> onPick,
+  }) {
+    final colors = <Color>[
+      Colors.white,
+      Colors.black,
+      const Color(0xFFF5F5F5),
+      const Color(0xFF212121),
+      const Color(0xFF6750A4),
+      const Color(0xFFE57373),
+      const Color(0xFFFFB74D),
+      const Color(0xFF64B5F6),
+      const Color(0xFF81C784),
+      const Color(0xFFBA68C8),
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: colors.map((c) {
+        final sel = c.value == selectedColor.value;
+        return GestureDetector(
+          onTap: () => onPick(c),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: c,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: sel ? Colors.blue : Colors.grey.shade400,
+                width: sel ? 3 : 1,
+              ),
+            ),
+            child: sel
+                ? Icon(Icons.check,
+                    size: 18,
+                    color: c.computeLuminance() > 0.5
+                        ? Colors.black
+                        : Colors.white)
+                : null,
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -455,6 +580,8 @@ class _EditorScreenState extends State<EditorScreen> {
                     borderWidth: _project.borderWidth,
                     borderColor: _project.borderColor,
                     backgroundColor: _project.backgroundColor,
+                    gradientEndColor: _project.gradientEndColor,
+                    backgroundType: _project.backgroundType,
                     cellColor: scheme.surfaceContainerHigh,
                     ratio: _project.ratio,
                     cornerRadius: _project.cornerRadius,
