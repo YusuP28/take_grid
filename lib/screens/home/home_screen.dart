@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/grid_template.dart';
+import '../editor/editor_screen.dart';
 import '../../widgets/grid_preview.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -49,8 +50,11 @@ class HomeScreen extends StatelessWidget {
               final tpl = GridTemplates.all[i];
               return GestureDetector(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Pilih: ${tpl.name} (Fase 4)')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditorScreen(template: tpl),
+                    ),
                   );
                 },
                 child: Container(

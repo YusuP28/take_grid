@@ -1,14 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/grid_template.dart';
+import '../models/grid_project.dart';
 
-/// Widget render template grid (kosong / dengan gambar)
 class GridPreview extends StatelessWidget {
   final GridTemplate template;
-  final List<String> imagePaths; // optional, bisa kosong
+  final List<String?> imagePaths;
   final double borderWidth;
   final Color borderColor;
   final Color backgroundColor;
   final Color cellColor;
+  final GridRatio ratio;
+  final double? fixedHeight;
 
   const GridPreview({
     super.key,
@@ -18,12 +21,14 @@ class GridPreview extends StatelessWidget {
     this.borderColor = Colors.white,
     this.backgroundColor = Colors.white,
     this.cellColor = const Color(0xFFE0E0E0),
+    this.ratio = GridRatio.square,
+    this.fixedHeight,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
+    final content = AspectRatio(
+      aspectRatio: ratio.value,
       child: Container(
         color: backgroundColor,
         child: LayoutBuilder(
@@ -35,7 +40,7 @@ class GridPreview extends StatelessWidget {
               children: template.cells.asMap().entries.map((entry) {
                 final i = entry.key;
                 final cell = entry.value;
-                final hasImage = i < imagePaths.length;
+                final path = i < imagePaths.length ? imagePaths[i] : null;
 
                 return Positioned(
                   left: cell.x * w + borderWidth / 2,
@@ -44,16 +49,18 @@ class GridPreview extends StatelessWidget {
                   height: cell.h * h - borderWidth,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: hasImage ? null : cellColor,
+                      color: path == null ? cellColor : null,
                       border: borderWidth > 0
                           ? Border.all(color: borderColor, width: borderWidth)
                           : null,
                     ),
-                    child: hasImage
-                        ? Image.asset(
-                            imagePaths[i],
+                    child: path != null
+                        ? Image.file(
+                            File(path),
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(color: cellColor),
+                            gaplessPlayback: true,
+                            errorBuilder: (_, __, ___) =>
+                                Container(color: cellColor),
                           )
                         : null,
                   ),
@@ -64,5 +71,10 @@ class GridPreview extends StatelessWidget {
         ),
       ),
     );
+
+    if (fixedHeight != null) {
+      return SizedBox(height: fixedHeight, child: content);
+    }
+    return content;
   }
 }
