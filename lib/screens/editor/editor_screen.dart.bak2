@@ -402,8 +402,8 @@ class _EditorScreenState extends State<EditorScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
                   Expanded(child: Text('Tersimpan: ${result.path}')),
                 ],
               ),
@@ -1011,19 +1011,24 @@ class _EditorScreenState extends State<EditorScreen> {
                       ],
                     ),
                   ),
-          ),
-        );
+                );
       },
     );
   }
 
   Widget _buildToolbar() {
     final scheme = Theme.of(context).colorScheme;
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 68,
+    return Container(
+      decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: scheme.outlineVariant, width: 1),
+        ),
+      ),
+      child: SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 68,
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
