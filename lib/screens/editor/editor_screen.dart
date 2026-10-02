@@ -11,7 +11,7 @@ import '../../widgets/grid_preview.dart';
 import '../../services/export_service.dart';
 import '../../services/editor_settings_service.dart';
 
-enum BottomPanel { none, border, corner, background, text, emoji, transform }
+enum BottomPanel { none, border, corner, background, text, emoji, transform, filter }
 
 class EditorScreen extends StatefulWidget {
   final GridTemplate template;
@@ -763,6 +763,50 @@ class _EditorScreenState extends State<EditorScreen> {
           ),
         );
 
+      case BottomPanel.filter:
+        if (_activeCellIndex == null) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('Pilih cell dulu di bawah',
+                  style: TextStyle(color: Colors.grey)),
+            ),
+          );
+        }
+        final t = _project.transforms[_activeCellIndex!];
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.tune, size: 18),
+                const SizedBox(width: 8),
+                Text('Filter Cell ${_activeCellIndex! + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => setState(() => t.resetFilter()),
+                  child: const Text('Reset'),
+                ),
+              ]),
+              _filterRow('Brightness', t.brightness, -1.0, 1.0, (v) {
+                setState(() => t.brightness = v);
+              }),
+              _filterRow('Contrast', t.contrast, 0.5, 2.0, (v) {
+                setState(() => t.contrast = v);
+              }),
+              _filterRow('Saturation', t.saturation, 0.0, 2.0, (v) {
+                setState(() => t.saturation = v);
+              }),
+              _filterRow('Warmth', t.warmth, -1.0, 1.0, (v) {
+                setState(() => t.warmth = v);
+              }),
+            ],
+          ),
+        );
+
       case BottomPanel.transform:
         if (_activeCellIndex == null) return const SizedBox.shrink();
         final t = _project.transforms[_activeCellIndex!];
@@ -961,10 +1005,38 @@ class _EditorScreenState extends State<EditorScreen> {
             _toolBtn(Icons.line_weight, 'Border', BottomPanel.border, scheme),
             _toolBtn(Icons.rounded_corner, 'Sudut', BottomPanel.corner, scheme),
             _toolBtn(Icons.palette_outlined, 'Warna', BottomPanel.background, scheme),
+            _toolBtn(Icons.tune, 'Filter', BottomPanel.filter, scheme),
             _toolBtn(Icons.text_fields, 'Teks', BottomPanel.text, scheme),
             _toolBtn(Icons.emoji_emotions_outlined, 'Emoji', BottomPanel.emoji, scheme),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _filterRow(String label, double value, double min, double max,
+      ValueChanged<double> onChange) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(label, style: const TextStyle(fontSize: 12)),
+          ),
+          Expanded(
+            child: Slider(
+              value: value, min: min, max: max,
+              onChanged: onChange,
+            ),
+          ),
+          SizedBox(
+            width: 40,
+            child: Text(value.toStringAsFixed(2),
+                style: const TextStyle(fontSize: 11),
+                textAlign: TextAlign.right),
+          ),
+        ],
       ),
     );
   }

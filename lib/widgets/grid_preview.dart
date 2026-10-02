@@ -154,10 +154,57 @@ class _GridPreviewState extends State<GridPreview> {
       img = FractionalTranslation(translation: t.offset, child: img);
     }
 
+    // Apply color filter kalau ada
+    if (t.hasFilter) {
+      img = ColorFiltered(
+        colorFilter: ColorFilter.matrix(_buildColorMatrix(t)),
+        child: img,
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.cornerRadius),
       child: img,
     );
+  }
+
+  /// Build color matrix dari brightness/contrast/saturation/warmth
+  List<double> _buildColorMatrix(CellTransform t) {
+    // Brightness: -1..1 → -255..255 offset
+    final b = t.brightness * 255;
+
+    // Contrast: 0..2 → standard contrast matrix
+    final c = t.contrast;
+    final ct = (1.0 - c) * 0.5 * 255;
+
+    // Saturation: 0..2 → mix with luminance
+    final sat = t.saturation;
+    final sr = (1 - sat) * 0.2126;
+    final sg = (1 - sat) * 0.7152;
+    final sb = (1 - sat) * 0.0722;
+
+    // Warmth: -1..1 → orange/blue shift
+    final w = t.warmth;
+    final wr = 1.0 + w * 0.3;
+    final wb = 1.0 - w * 0.3;
+
+    // Kombinasi: contrast × saturation × warmth, lalu tambah brightness
+    final r0 = (sr + sat * wr) * c;
+    final r1 = sg * c;
+    final r2 = sb * c;
+    final g0 = sr * c;
+    final g1 = (sg + sat) * c;
+    final g2 = sb * c;
+    final b0 = sr * c;
+    final b1 = sg * c;
+    final b2 = (sb + sat * wb) * c;
+
+    return <double>[
+      r0, r1, r2, 0, b + ct,
+      g0, g1, g2, 0, b + ct,
+      b0, b1, b2, 0, b + ct,
+      0, 0, 0, 1, 0,
+    ];
   }
 
   @override

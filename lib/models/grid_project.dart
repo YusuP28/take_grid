@@ -77,6 +77,11 @@ class CellTransform {
   bool flipH;
   bool flipV;
   Offset offset;
+  // Filters
+  double brightness; // -1.0 to 1.0
+  double contrast;   // 0.0 to 2.0
+  double saturation; // 0.0 to 2.0
+  double warmth;     // -1.0 to 1.0 (blue to orange)
 
   CellTransform({
     this.zoom = 1.0,
@@ -84,6 +89,10 @@ class CellTransform {
     this.flipH = false,
     this.flipV = false,
     this.offset = Offset.zero,
+    this.brightness = 0.0,
+    this.contrast = 1.0,
+    this.saturation = 1.0,
+    this.warmth = 0.0,
   });
 
   CellTransform copyWith({
@@ -92,13 +101,27 @@ class CellTransform {
     bool? flipH,
     bool? flipV,
     Offset? offset,
+    double? brightness,
+    double? contrast,
+    double? saturation,
+    double? warmth,
   }) => CellTransform(
         zoom: zoom ?? this.zoom,
         rotation: rotation ?? this.rotation,
         flipH: flipH ?? this.flipH,
         flipV: flipV ?? this.flipV,
         offset: offset ?? this.offset,
+        brightness: brightness ?? this.brightness,
+        contrast: contrast ?? this.contrast,
+        saturation: saturation ?? this.saturation,
+        warmth: warmth ?? this.warmth,
       );
+
+  bool get hasFilter =>
+      brightness != 0.0 ||
+      contrast != 1.0 ||
+      saturation != 1.0 ||
+      warmth != 0.0;
 
   void reset() {
     zoom = 1.0;
@@ -106,6 +129,17 @@ class CellTransform {
     flipH = false;
     flipV = false;
     offset = Offset.zero;
+    brightness = 0.0;
+    contrast = 1.0;
+    saturation = 1.0;
+    warmth = 0.0;
+  }
+
+  void resetFilter() {
+    brightness = 0.0;
+    contrast = 1.0;
+    saturation = 1.0;
+    warmth = 0.0;
   }
 }
 
