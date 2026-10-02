@@ -163,15 +163,12 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: _activeIndex != null ? 60 : 0,
-              ),
-              child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+          Positioned.fill(
+            bottom: _activeIndex != null ? 180 : 0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               color: scheme.surfaceContainerHighest,
               padding: const EdgeInsets.all(16),
               child: Center(
@@ -231,9 +228,14 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
             ),
           ),
           ),
-          // Toolbar kontrol — 2 baris
+
+          // Toolbar kontrol — overlay di bawah (2 baris)
           if (_activeIndex != null)
-            Container(
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
               color: scheme.surfaceContainerLow,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Column(
