@@ -10,7 +10,7 @@ import '../../models/grid_template.dart';
 import '../../widgets/grid_preview.dart';
 import '../../services/export_service.dart';
 
-enum BottomPanel { none, border, corner, background, text, emoji }
+enum BottomPanel { none, border, corner, background, text, emoji, transform }
 
 class EditorScreen extends StatefulWidget {
   final GridTemplate template;
@@ -29,6 +29,7 @@ class _EditorScreenState extends State<EditorScreen> {
   ExportQuality _quality = ExportQuality.fhd1080;
   bool _exporting = false;
   BottomPanel _panel = BottomPanel.none;
+  int? _activeCellIndex;
 
   @override
   void initState() {
@@ -105,7 +106,13 @@ class _EditorScreenState extends State<EditorScreen> {
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('Transform'),
-              onTap: () { Navigator.pop(ctx); _showTransformDialog(index); },
+              onTap: () {
+                Navigator.pop(ctx);
+                setState(() {
+                  _activeCellIndex = index;
+                  _panel = BottomPanel.transform;
+                });
+              },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
@@ -129,86 +136,6 @@ class _EditorScreenState extends State<EditorScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showTransformDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) {
-          final t = _project.transforms[index];
-          return AlertDialog(
-            title: Text('Transform Cell ${index + 1}'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    const Text('Zoom', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    Text('${t.zoom.toStringAsFixed(1)}x'),
-                  ]),
-                  Slider(
-                    value: t.zoom, min: 1.0, max: 3.0, divisions: 20,
-                    onChanged: (v) {
-                      setLocal(() {});
-                      setState(() => _project.transforms[index].zoom = v);
-                    },
-                  ),
-                  Row(children: [
-                    const Text('Rotasi', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    Text('${(t.rotation * 180 / 3.14159).round()}°'),
-                  ]),
-                  Slider(
-                    value: t.rotation, min: -3.14159, max: 3.14159, divisions: 12,
-                    onChanged: (v) {
-                      setLocal(() {});
-                      setState(() => _project.transforms[index].rotation = v);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Flip', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Row(children: [
-                    FilterChip(
-                      label: const Text('Horizontal'),
-                      selected: t.flipH,
-                      onSelected: (v) {
-                        setLocal(() {});
-                        setState(() => _project.transforms[index].flipH = v);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Vertikal'),
-                      selected: t.flipV,
-                      onSelected: (v) {
-                        setLocal(() {});
-                        setState(() => _project.transforms[index].flipV = v);
-                      },
-                    ),
-                  ]),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  setState(() => _project.transforms[index].reset());
-                  Navigator.pop(ctx);
-                },
-                child: const Text('Reset'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
       ),
     );
   }
@@ -787,6 +714,63 @@ class _EditorScreenState extends State<EditorScreen> {
             onPressed: _panel == BottomPanel.text ? _addText : _addEmoji,
             icon: const Icon(Icons.add),
             label: Text(_panel == BottomPanel.text ? 'Tambah Teks' : 'Pilih Emoji'),
+          ),
+        );
+
+      case BottomPanel.transform:
+        if (_activeCellIndex == null) return const SizedBox.shrink();
+        final t = _project.transforms[_activeCellIndex!];
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(Icons.edit, size: 18, color: scheme.primary),
+                const SizedBox(width: 8),
+                Text('Transform Cell ${_activeCellIndex! + 1}',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => setState(() => t.reset()),
+                  child: const Text('Reset'),
+                ),
+              ]),
+              Row(children: [
+                const Text('Zoom'),
+                const Spacer(),
+                Text('${t.zoom.toStringAsFixed(1)}x',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ]),
+              Slider(
+                value: t.zoom, min: 1.0, max: 3.0, divisions: 20,
+                onChanged: (v) => setState(() => t.zoom = v),
+              ),
+              Row(children: [
+                const Text('Rotasi'),
+                const Spacer(),
+                Text('${(t.rotation * 180 / 3.14159).round()}°',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ]),
+              Slider(
+                value: t.rotation, min: -3.14159, max: 3.14159, divisions: 12,
+                onChanged: (v) => setState(() => t.rotation = v),
+              ),
+              const SizedBox(height: 8),
+              Row(children: [
+                FilterChip(
+                  label: const Text('Flip H'),
+                  selected: t.flipH,
+                  onSelected: (v) => setState(() => t.flipH = v),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Flip V'),
+                  selected: t.flipV,
+                  onSelected: (v) => setState(() => t.flipV = v),
+                ),
+              ]),
+            ],
           ),
         );
     }
