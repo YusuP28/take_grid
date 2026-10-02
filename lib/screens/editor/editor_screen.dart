@@ -16,7 +16,13 @@ enum BottomPanel { none, border, corner, background, text, emoji, transform }
 class EditorScreen extends StatefulWidget {
   final GridTemplate template;
   final List<String>? initialImages;
-  const EditorScreen({super.key, required this.template, this.initialImages});
+  final GridRatio? initialRatio;
+  const EditorScreen({
+    super.key,
+    required this.template,
+    this.initialImages,
+    this.initialRatio,
+  });
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -31,11 +37,15 @@ class _EditorScreenState extends State<EditorScreen> {
   bool _exporting = false;
   BottomPanel _panel = BottomPanel.none;
   int? _activeCellIndex;
+  Color _newTextColor = Colors.white;
+  double _newTextSize = 24;
+  final _newTextCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _project = GridProject(template: widget.template);
+    if (widget.initialRatio != null) _project.ratio = widget.initialRatio!;
     if (widget.initialImages != null) {
       for (int i = 0; i < widget.initialImages!.length; i++) {
         if (i >= _project.imagePaths.length) break;
@@ -163,81 +173,24 @@ class _EditorScreenState extends State<EditorScreen> {
 
   // ============= OVERLAY =============
   void _addText() {
-    final ctrl = TextEditingController();
-    Color color = Colors.white;
-    double size = 24;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Tambah Teks'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: ctrl, autofocus: true,
-                  decoration: const InputDecoration(
-                    hintText: 'Tulis teks...',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text('Warna', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  children: [Colors.white, Colors.black, Colors.red,
-                    Colors.yellow, Colors.green, Colors.blue,
-                    Colors.purple, Colors.orange,
-                  ].map((c) => GestureDetector(
-                    onTap: () => setLocal(() => color = c),
-                    child: Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        color: c, shape: BoxShape.circle,
-                        border: Border.all(
-                          color: color == c ? Colors.blue : Colors.grey,
-                          width: color == c ? 3 : 1,
-                        ),
-                      ),
-                    ),
-                  )).toList(),
-                ),
-                const SizedBox(height: 12),
-                const Text('Ukuran', style: TextStyle(fontWeight: FontWeight.bold)),
-                Slider(
-                  value: size, min: 12, max: 72, divisions: 30,
-                  label: '${size.round()}',
-                  onChanged: (v) => setLocal(() => size = v),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-            FilledButton(
-              onPressed: () {
-                if (ctrl.text.trim().isEmpty) return;
-                setState(() {
-                  _project.overlays.add(OverlayItem(
-                    id: const Uuid().v4(),
-                    type: OverlayType.text,
-                    content: ctrl.text.trim(),
-                    color: color,
-                    fontSize: size,
-                  ));
-                });
-                Navigator.pop(ctx);
-                setState(() => _panel = BottomPanel.none);
-              },
-              child: const Text('Tambah'),
-            ),
-          ],
-        ),
-      ),
-    );
+    _newTextCtrl.clear();
+    setState(() => _panel = BottomPanel.text);
+  }
+
+  void _commitText() {
+    final txt = _newTextCtrl.text.trim();
+    if (txt.isEmpty) return;
+    setState(() {
+      _project.overlays.add(OverlayItem(
+        id: const Uuid().v4(),
+        type: OverlayType.text,
+        content: txt,
+        color: _newTextColor,
+        fontSize: _newTextSize,
+      ));
+      _newTextCtrl.clear();
+      _panel = BottomPanel.none;
+    });
   }
 
   void _addEmoji() {
@@ -567,7 +520,19 @@ class _EditorScreenState extends State<EditorScreen> {
                     ratio: _project.ratio,
                     cornerRadius: _project.cornerRadius,
                     transforms: _project.transforms,
-                    overlays: _project.overlays,
+                    overlays: [
+                      ..._project.overlays,
+                      // Live preview teks baru
+                      if (_panel == BottomPanel.text && _newTextCtrl.text.trim().isNotEmpty)
+                        OverlayItem(
+                          id: '_preview_',
+                          type: OverlayType.text,
+                          content: _newTextCtrl.text.trim(),
+                          color: _newTextColor,
+                          fontSize: _newTextSize,
+                          position: const Offset(0.5, 0.9),
+                        ),
+                    ],
                     onOverlayMove: (idx, pos) {
                       setState(() {
                         _project.overlays[idx] =
@@ -754,12 +719,71 @@ class _EditorScreenState extends State<EditorScreen> {
         );
 
       case BottomPanel.text:
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _newTextCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Tulis teks...',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6, runSpacing: 6,
+                children: [
+                  Colors.white, Colors.black, Colors.red, Colors.yellow,
+                  Colors.green, Colors.blue, Colors.purple, Colors.orange,
+                ].map((c) => GestureDetector(
+                  onTap: () => setState(() => _newTextColor = c),
+                  child: Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: c, shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _newTextColor == c ? Colors.blue : Colors.grey,
+                        width: _newTextColor == c ? 3 : 1,
+                      ),
+                    ),
+                  ),
+                )).toList(),
+              ),
+              Row(
+                children: [
+                  const Text('Size', style: TextStyle(fontSize: 12)),
+                  Expanded(
+                    child: Slider(
+                      value: _newTextSize, min: 12, max: 72, divisions: 30,
+                      label: '${_newTextSize.round()}',
+                      onChanged: (v) => setState(() => _newTextSize = v),
+                    ),
+                  ),
+                  Text('${_newTextSize.round()}',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: _commitText,
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Tambah'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+
       case BottomPanel.emoji:
         return Center(
           child: TextButton.icon(
-            onPressed: _panel == BottomPanel.text ? _addText : _addEmoji,
+            onPressed: _addEmoji,
             icon: const Icon(Icons.add),
-            label: Text(_panel == BottomPanel.text ? 'Tambah Teks' : 'Pilih Emoji'),
+            label: const Text('Pilih Emoji'),
           ),
         );
 
@@ -950,9 +974,11 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _buildToolbar() {
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
+      top: false,
       child: Container(
+        height: 68,
         color: scheme.surfaceContainerLow,
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [

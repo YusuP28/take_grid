@@ -9,6 +9,38 @@ import '../../widgets/grid_preview.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  Future<void> _pickRatioThenOpen(BuildContext context, GridTemplate tpl) async {
+    final ratio = await showModalBottomSheet<GridRatio>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Pilih Rasio',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(height: 1),
+            ...GridRatio.values.map((r) => ListTile(
+                  leading: const Icon(Icons.aspect_ratio),
+                  title: Text(r.label),
+                  onTap: () => Navigator.pop(ctx, r),
+                )),
+          ],
+        ),
+      ),
+    );
+    if (ratio == null) return;
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditorScreen(template: tpl, initialRatio: ratio),
+      ),
+    );
+  }
+
   Future<void> _autoGrid(BuildContext context) async {
     final picker = ImagePicker();
     final files = await picker.pickMultiImage(
@@ -137,14 +169,7 @@ class HomeScreen extends StatelessWidget {
             itemBuilder: (_, i) {
               final tpl = GridTemplates.all[i];
               return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EditorScreen(template: tpl),
-                    ),
-                  );
-                },
+                onTap: () => _pickRatioThenOpen(context, tpl),
                 child: Container(
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerLow,
