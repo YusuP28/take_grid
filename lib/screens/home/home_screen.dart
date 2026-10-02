@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../models/grid_template.dart';
 import '../../models/grid_project.dart';
-import '../editor/editor_screen.dart';
 import '../../services/smart_grid_service.dart';
-import 'package:image_picker/image_picker.dart';
+import '../../widgets/grid_preview.dart';
+import '../editor/editor_screen.dart';
 import '../freestyle/freestyle_screen.dart';
 import '../settings/settings_screen.dart';
-import '../../widgets/grid_preview.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  // ============ QUICK TEMPLATE PICKER (dari FAB) ============
   Future<void> _showQuickTemplatePicker(BuildContext context) async {
     await showModalBottomSheet(
       context: context,
@@ -51,10 +53,14 @@ class HomeScreen extends StatelessWidget {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        color:
+                            Theme.of(context).colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.3),
                         ),
                       ),
                       padding: const EdgeInsets.all(8),
@@ -64,16 +70,23 @@ class HomeScreen extends StatelessWidget {
                             child: GridPreview(
                               template: tpl,
                               borderWidth: 1.0,
-                              borderColor: Theme.of(context).colorScheme.primary,
-                              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              cellColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                              borderColor:
+                                  Theme.of(context).colorScheme.primary,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              cellColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(tpl.name,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                              style: const TextStyle(
+                                  fontSize: 11, fontWeight: FontWeight.w600)),
                           Text('${tpl.cellCount} foto',
-                              style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                              style: const TextStyle(
+                                  fontSize: 9, color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -87,7 +100,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _pickRatioThenOpen(BuildContext context, GridTemplate tpl) async {
+  Future<void> _pickRatioThenOpen(
+      BuildContext context, GridTemplate tpl) async {
     final ratio = await showModalBottomSheet<GridRatio>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -97,7 +111,8 @@ class HomeScreen extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text('Pilih Rasio',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
             const Divider(height: 1),
             ...GridRatio.values.map((r) => ListTile(
@@ -119,6 +134,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ============ AUTO GRID ============
   Future<void> _autoGrid(BuildContext context) async {
     final picker = ImagePicker();
     final files = await picker.pickMultiImage(
@@ -127,15 +143,14 @@ class HomeScreen extends StatelessWidget {
       limit: 12,
     );
     if (files.isEmpty) return;
-    if (files.length > 12) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Max 12 foto. Ambil 12 teratas.')),
-        );
-      }
-    }
 
     final count = files.length > 12 ? 12 : files.length;
+    if (files.length > 12 && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Max 12 foto. Ambil 12 teratas.')),
+      );
+    }
+
     final template = SmartGridService.forPhotoCount(count);
 
     if (!context.mounted) return;
@@ -150,6 +165,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ============ BUILD ============
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -170,7 +186,51 @@ class HomeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          
+          // === Auto Grid ===
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.auto_awesome, color: Colors.white),
+              ),
+              title: const Text('Auto Grid',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: const Text('Pilih foto → grid otomatis (max 12)'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => _autoGrid(context),
+            ),
+          ),
+
+          // === Free Style Canvas ===
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.dashboard_customize,
+                    color: scheme.onPrimaryContainer),
+              ),
+              title: const Text('Free Style Canvas',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: const Text('Susun foto bebas tanpa grid'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FreeStyleScreen()),
+              ),
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
