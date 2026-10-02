@@ -617,8 +617,9 @@ class _EditorScreenState extends State<EditorScreen> {
 
       case BottomPanel.border:
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(children: [
@@ -644,8 +645,9 @@ class _EditorScreenState extends State<EditorScreen> {
 
       case BottomPanel.corner:
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(children: [
@@ -719,9 +721,10 @@ class _EditorScreenState extends State<EditorScreen> {
         );
 
       case BottomPanel.text:
-        return SingleChildScrollView(
+        return Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
