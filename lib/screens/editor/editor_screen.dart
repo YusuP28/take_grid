@@ -591,11 +591,24 @@ class _EditorScreenState extends State<EditorScreen> {
                     ),
                   ),
 
-                  // Panel content (berubah sesuai tab)
-                  Expanded(child: _buildPanelContent()),
+                  // Cell picker selalu tampil
+                  Expanded(child: _buildCellPicker()),
 
-                  // Cell picker (kalau panel none)
-                  if (_panel == BottomPanel.none) _buildCellPicker(),
+                  // Panel content (muncul overlay di atas cell picker)
+                  if (_panel != BottomPanel.none)
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      decoration: BoxDecoration(
+                        color: scheme.surface,
+                        border: Border(
+                          top: BorderSide(
+                            color: scheme.outlineVariant,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: _buildPanelContent(),
+                    ),
 
                   // Tab bar (toolbar)
                   _buildToolbar(),
@@ -726,9 +739,20 @@ class _EditorScreenState extends State<EditorScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Icon(Icons.edit, size: 18, color: scheme.primary),
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, size: 20),
+                  tooltip: 'Kembali',
+                  onPressed: () => setState(() {
+                    _panel = BottomPanel.none;
+                    _activeCellIndex = null;
+                  }),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
                 const SizedBox(width: 8),
-                Text('Transform Cell ${_activeCellIndex! + 1}',
+                Icon(Icons.edit, size: 18, color: scheme.primary),
+                const SizedBox(width: 6),
+                Text('Cell ${_activeCellIndex! + 1}',
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
                 TextButton(
@@ -768,6 +792,15 @@ class _EditorScreenState extends State<EditorScreen> {
                   label: const Text('Flip V'),
                   selected: t.flipV,
                   onSelected: (v) => setState(() => t.flipV = v),
+                ),
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: () => setState(() {
+                    _panel = BottomPanel.none;
+                    _activeCellIndex = null;
+                  }),
+                  icon: const Icon(Icons.check, size: 16),
+                  label: const Text('Selesai'),
                 ),
               ]),
             ],
@@ -809,8 +842,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Widget _buildCellPicker() {
     final scheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: GridView.builder(
+    return GridView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4, mainAxisSpacing: 8, crossAxisSpacing: 8,
