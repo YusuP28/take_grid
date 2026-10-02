@@ -462,8 +462,9 @@ class _EditorScreenState extends State<EditorScreen> {
         ],
       ),
       body: Stack(
+        clipBehavior: Clip.hardEdge,
         children: [
-          // MAIN COLUMN — canvas + cell picker + toolbar (FIXED)
+          // LAYER 1: MAIN COLUMN — canvas + cell picker + toolbar (DIAM)
           Column(
             children: [
               // Preview area (canvas)
@@ -556,22 +557,26 @@ class _EditorScreenState extends State<EditorScreen> {
             ],
           ),
 
-          // PANEL OVERLAY — muncul di atas cell picker, tepat di atas toolbar
+          // LAYER 2: PANEL OVERLAY — nutup cell picker, TIDAK geser canvas
           if (_panel != BottomPanel.none)
             Positioned(
               left: 0,
               right: 0,
-              bottom: 68, // tepat di atas toolbar
+              bottom: 68,
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 200),
                 decoration: BoxDecoration(
                   color: scheme.surface,
                   border: Border(
-                    top: BorderSide(
-                      color: scheme.outlineVariant,
-                      width: 1,
-                    ),
+                    top: BorderSide(color: scheme.outlineVariant, width: 1),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
                 ),
                 child: _buildPanelContent(),
               ),
@@ -580,7 +585,6 @@ class _EditorScreenState extends State<EditorScreen> {
       ),
     );
   }
-
   // ============= PANEL CONTENT =============
   Widget _buildPanelContent() {
     final scheme = Theme.of(context).colorScheme;

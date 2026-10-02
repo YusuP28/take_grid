@@ -29,3 +29,7 @@ android/key.properties
 *.bak
 *.bak-*
 *.tmp
+
+# stray files
+kirocli.zip
+kirocli/
