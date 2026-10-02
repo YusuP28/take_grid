@@ -165,10 +165,10 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
       ),
       body: Stack(
         children: [
+          // Canvas — fixed, tidak bergerak saat control muncul
           Positioned.fill(
-            bottom: _activeIndex != null ? 180 : 0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
+            bottom: _activeIndex != null ? 170 : 0,
+            child: Container(
               color: scheme.surfaceContainerHighest,
               padding: const EdgeInsets.all(16),
               child: Center(
@@ -227,75 +227,76 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
               ),
             ),
           ),
-          ),
 
-          // Toolbar kontrol — overlay di bawah (2 baris)
+          // Control bar — overlay di bawah (tidak dorong canvas)
           if (_activeIndex != null)
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
               child: Container(
-              color: scheme.surfaceContainerLow,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Baris 1: Zoom + Rotasi
-                  Row(
-                    children: [
-                      const Icon(Icons.zoom_in, size: 18),
-                      Expanded(
-                        child: Slider(
-                          value: _items[_activeIndex!].scale,
-                          min: 0.1,
-                          max: 1.5,
-                          onChanged: (v) => setState(
-                              () => _items[_activeIndex!].scale = v),
+                color: scheme.surfaceContainerLow,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Baris 1: Zoom
+                    Row(
+                      children: [
+                        const Icon(Icons.zoom_in, size: 18),
+                        Expanded(
+                          child: Slider(
+                            value: _items[_activeIndex!].scale,
+                            min: 0.1,
+                            max: 1.5,
+                            onChanged: (v) => setState(
+                                () => _items[_activeIndex!].scale = v),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Icon(Icons.rotate_right, size: 18),
-                      Expanded(
-                        child: Slider(
-                          value: _items[_activeIndex!].rotation,
-                          min: -3.14159,
-                          max: 3.14159,
-                          divisions: 24,
-                          onChanged: (v) => setState(
-                              () => _items[_activeIndex!].rotation = v),
+                      ],
+                    ),
+                    // Baris 2: Rotasi
+                    Row(
+                      children: [
+                        const Icon(Icons.rotate_right, size: 18),
+                        Expanded(
+                          child: Slider(
+                            value: _items[_activeIndex!].rotation,
+                            min: -3.14159,
+                            max: 3.14159,
+                            divisions: 24,
+                            onChanged: (v) => setState(
+                                () => _items[_activeIndex!].rotation = v),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  // Baris 2: Reset + Hapus
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => setState(() {
-                          _items[_activeIndex!].scale = 0.4;
-                          _items[_activeIndex!].rotation = 0;
-                        }),
-                        icon: const Icon(Icons.restart_alt, size: 18),
-                        label: const Text('Reset'),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => setState(() {
-                          _items.removeAt(_activeIndex!);
-                          _activeIndex = null;
-                        }),
-                        icon: Icon(Icons.delete,
-                            color: scheme.error, size: 18),
-                        label: Text('Hapus',
-                            style: TextStyle(color: scheme.error)),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    // Baris 3: Reset + Hapus
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => setState(() {
+                            _items[_activeIndex!].scale = 0.4;
+                            _items[_activeIndex!].rotation = 0;
+                          }),
+                          icon: const Icon(Icons.restart_alt, size: 18),
+                          label: const Text('Reset'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => setState(() {
+                            _items.removeAt(_activeIndex!);
+                            _activeIndex = null;
+                          }),
+                          icon: Icon(Icons.delete,
+                              color: scheme.error, size: 18),
+                          label: Text('Hapus',
+                              style: TextStyle(color: scheme.error)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
