@@ -876,51 +876,75 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _buildCellPicker() {
     final scheme = Theme.of(context).colorScheme;
     return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, mainAxisSpacing: 8, crossAxisSpacing: 8,
-        ),
-        itemCount: _project.template.cellCount,
-        itemBuilder: (_, i) {
-          final path = _project.imagePaths[i];
-          return GestureDetector(
-            onTap: () => _pickImageForCell(i),
-            onLongPress: path != null ? () => _showCellMenu(i) : null,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: path != null ? scheme.primary : scheme.outlineVariant,
-                  width: path != null ? 2 : 1,
-                ),
-                color: scheme.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+      ),
+      itemCount: _project.template.cellCount,
+      itemBuilder: (_, i) {
+        final path = _project.imagePaths[i];
+        return GestureDetector(
+          onTap: () => _pickImageForCell(i),
+          onLongPress: path != null ? () => _showCellMenu(i) : null,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: path != null ? scheme.primary : scheme.outlineVariant,
+                width: path != null ? 2 : 1,
               ),
-              clipBehavior: Clip.antiAlias,
-              child: path != null
-                  ? Stack(fit: StackFit.expand, children: [
-                      Image.file(File(path), fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image)),
-                      Positioned(top: 2, right: 2, child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.black54, shape: BoxShape.circle),
-                        padding: const EdgeInsets.all(2),
-                        child: Text('${i + 1}',
-                            style: const TextStyle(fontSize: 10, color: Colors.white)),
-                      )),
-                    ])
-                  : Center(child: Column(
+              color: scheme.surfaceContainerLow,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: path != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(
+                        File(path),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.broken_image),
+                      ),
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(2),
+                          child: Text(
+                            '${i + 1}',
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_photo_alternate_outlined, color: scheme.primary),
+                        Icon(Icons.add_photo_alternate_outlined,
+                            color: scheme.primary),
                         const SizedBox(height: 4),
-                        Text('${i + 1}',
-                            style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
+                        Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                              fontSize: 10, color: scheme.onSurfaceVariant),
+                        ),
                       ],
-                    )),
-            ),
-          );
-        },
-      ),
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildToolbar() {
