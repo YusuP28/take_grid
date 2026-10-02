@@ -921,7 +921,6 @@ class _EditorScreenState extends State<EditorScreen> {
           );
         },
       ),
-    );
   }
 
   Widget _buildToolbar() {
