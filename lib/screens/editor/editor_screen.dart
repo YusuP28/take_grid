@@ -461,114 +461,121 @@ class _EditorScreenState extends State<EditorScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Preview area (canvas)
-          Expanded(
-            flex: 5,
-            child: Container(
-              color: scheme.surfaceContainerHighest,
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: RepaintBoundary(
-                  key: _exportKey,
-                  child: GridPreview(
-                    template: _project.template,
-                    imagePaths: _project.imagePaths,
-                    borderWidth: _project.borderWidth,
-                    borderColor: _project.borderColor,
-                    backgroundColor: _project.backgroundColor,
-                    gradientEndColor: _project.gradientEndColor,
-                    backgroundType: _project.backgroundType,
-                    cellColor: scheme.surfaceContainerHigh,
-                    ratio: _project.ratio,
-                    cornerRadius: _project.cornerRadius,
-                    transforms: _project.transforms,
-                    overlays: [
-                      ..._project.overlays,
-                      // Live preview teks baru
-                      if (_panel == BottomPanel.text && _newTextCtrl.text.trim().isNotEmpty)
-                        OverlayItem(
-                          id: '_preview_',
-                          type: OverlayType.text,
-                          content: _newTextCtrl.text.trim(),
-                          color: _newTextColor,
-                          fontSize: _newTextSize,
-                          position: const Offset(0.5, 0.9),
-                        ),
-                    ],
-                    onOverlayMove: (idx, pos) {
-                      setState(() {
-                        _project.overlays[idx] =
-                            _project.overlays[idx].copyWith(position: pos);
-                      });
-                    },
-                    onOverlayTap: _editOverlay,
-                    onCellTap: (i) {
-                      setState(() => _activeCellIndex = i);
-                    },
+          // MAIN COLUMN — canvas + cell picker + toolbar (FIXED)
+          Column(
+            children: [
+              // Preview area (canvas)
+              Expanded(
+                flex: 5,
+                child: Container(
+                  color: scheme.surfaceContainerHighest,
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: _exportKey,
+                      child: GridPreview(
+                        template: _project.template,
+                        imagePaths: _project.imagePaths,
+                        borderWidth: _project.borderWidth,
+                        borderColor: _project.borderColor,
+                        backgroundColor: _project.backgroundColor,
+                        gradientEndColor: _project.gradientEndColor,
+                        backgroundType: _project.backgroundType,
+                        cellColor: scheme.surfaceContainerHigh,
+                        ratio: _project.ratio,
+                        cornerRadius: _project.cornerRadius,
+                        transforms: _project.transforms,
+                        overlays: [
+                          ..._project.overlays,
+                          if (_panel == BottomPanel.text && _newTextCtrl.text.trim().isNotEmpty)
+                            OverlayItem(
+                              id: '_preview_',
+                              type: OverlayType.text,
+                              content: _newTextCtrl.text.trim(),
+                              color: _newTextColor,
+                              fontSize: _newTextSize,
+                              position: const Offset(0.5, 0.9),
+                            ),
+                        ],
+                        onOverlayMove: (idx, pos) {
+                          setState(() {
+                            _project.overlays[idx] =
+                                _project.overlays[idx].copyWith(position: pos);
+                          });
+                        },
+                        onOverlayTap: _editOverlay,
+                        onCellTap: (i) {
+                          setState(() => _activeCellIndex = i);
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // Bottom panel area (expandable)
-          Expanded(
-            flex: 4,
-            child: Container(
-              color: scheme.surface,
-              child: Column(
-                children: [
-                  // Info + clear
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      children: [
-                        Text('${_project.filledCount}/${_project.template.cellCount} foto',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const Spacer(),
-                        if (_project.filledCount > 0)
-                          TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                for (int i = 0; i < _project.imagePaths.length; i++) {
-                                  _project.setImage(i, null);
-                                }
-                              });
-                            },
-                            icon: const Icon(Icons.clear_all, size: 16),
-                            label: const Text('Kosongkan'),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // Cell picker selalu tampil
-                  Expanded(child: _buildCellPicker()),
-
-                  // Panel content (muncul overlay di atas cell picker)
-                  if (_panel != BottomPanel.none)
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      decoration: BoxDecoration(
-                        color: scheme.surface,
-                        border: Border(
-                          top: BorderSide(
-                            color: scheme.outlineVariant,
-                            width: 1,
-                          ),
+              // Bottom area — info + cell picker + toolbar
+              Expanded(
+                flex: 4,
+                child: Container(
+                  color: scheme.surface,
+                  child: Column(
+                    children: [
+                      // Info + clear
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Text('${_project.filledCount}/${_project.template.cellCount} foto',
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const Spacer(),
+                            if (_project.filledCount > 0)
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    for (int i = 0; i < _project.imagePaths.length; i++) {
+                                      _project.setImage(i, null);
+                                    }
+                                  });
+                                },
+                                icon: const Icon(Icons.clear_all, size: 16),
+                                label: const Text('Kosongkan'),
+                              ),
+                          ],
                         ),
                       ),
-                      child: _buildPanelContent(),
-                    ),
+                      // Cell picker (selalu tampil)
+                      Expanded(child: _buildCellPicker()),
+                      // Toolbar (fixed)
+                      _buildToolbar(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
 
-                  // Tab bar (toolbar)
-                  _buildToolbar(),
-                ],
+          // PANEL OVERLAY — muncul di atas cell picker, tepat di atas toolbar
+          if (_panel != BottomPanel.none)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 68, // tepat di atas toolbar
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 200),
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: scheme.outlineVariant,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: _buildPanelContent(),
               ),
             ),
-          ),
         ],
       ),
     );
