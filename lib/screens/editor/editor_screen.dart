@@ -193,57 +193,6 @@ class _EditorScreenState extends State<EditorScreen> {
     });
   }
 
-  void _addEmoji() {
-    final emojis = [
-      '😀','😂','😍','🥰','😎','🤔','😴','😭','😡','🤯',
-      '❤️','💕','💖','✨','⭐','🌟','🔥','💯','🎉','🎊',
-      '🌈','☀️','🌙','⚡','🌸','🌺','🍕','🍔','☕','🍰',
-      '🐱','🐶','🦄','🐼','🦋','🌻','🎈','🎁','👍','👏',
-    ];
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Pilih Emoji',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: GridView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 8, mainAxisSpacing: 8, crossAxisSpacing: 8,
-                ),
-                itemCount: emojis.length,
-                itemBuilder: (_, i) => GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _project.overlays.add(OverlayItem(
-                        id: const Uuid().v4(),
-                        type: OverlayType.emoji,
-                        content: emojis[i], fontSize: 36,
-                      ));
-                    });
-                    Navigator.pop(ctx);
-                    setState(() => _panel = BottomPanel.none);
-                  },
-                  child: Center(
-                    child: Text(emojis[i], style: const TextStyle(fontSize: 28)),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _editOverlay(int index) {
     final o = _project.overlays[index];
     showDialog(
@@ -782,11 +731,35 @@ class _EditorScreenState extends State<EditorScreen> {
         );
 
       case BottomPanel.emoji:
-        return Center(
-          child: TextButton.icon(
-            onPressed: _addEmoji,
-            icon: const Icon(Icons.add),
-            label: const Text('Pilih Emoji'),
+        // Emoji grid langsung di panel
+        final emojis = [
+          '😀','😂','😍','🥰','😎','🤔','😴','😭','😡','🤯',
+          '❤️','💕','💖','✨','⭐','🌟','🔥','💯','🎉','🎊',
+          '🌈','☀️','🌙','⚡','🌸','🌺','🍕','🍔','☕','🍰',
+          '🐱','🐶','🦄','🐼','🦋','🌻','🎈','🎁','👍','👏',
+        ];
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 8,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
+          ),
+          itemCount: emojis.length,
+          itemBuilder: (_, i) => GestureDetector(
+            onTap: () {
+              setState(() {
+                _project.overlays.add(OverlayItem(
+                  id: const Uuid().v4(),
+                  type: OverlayType.emoji,
+                  content: emojis[i],
+                  fontSize: 36,
+                ));
+              });
+            },
+            child: Center(
+              child: Text(emojis[i], style: const TextStyle(fontSize: 22)),
+            ),
           ),
         );
 
@@ -1006,10 +979,7 @@ class _EditorScreenState extends State<EditorScreen> {
           } else {
             _panel = panel;
             if (panel == BottomPanel.text) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => _addText());
-            }
-            if (panel == BottomPanel.emoji) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => _addEmoji());
+              _newTextCtrl.clear();
             }
           }
         });
