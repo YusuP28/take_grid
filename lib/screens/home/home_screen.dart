@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/grid_template.dart';
+import '../../models/grid_project.dart';
 import '../editor/editor_screen.dart';
 import '../../services/smart_grid_service.dart';
 import 'package:image_picker/image_picker.dart';
