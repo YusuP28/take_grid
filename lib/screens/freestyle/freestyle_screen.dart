@@ -231,47 +231,67 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
             ),
           ),
           ),
-          // Toolbar kontrol
+          // Toolbar kontrol — 2 baris
           if (_activeIndex != null)
             Container(
               color: scheme.surfaceContainerLow,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.zoom_in, size: 18),
-                  Expanded(
-                    child: Slider(
-                      value: _items[_activeIndex!].scale,
-                      min: 0.1,
-                      max: 1.5,
-                      onChanged: (v) => setState(
-                          () => _items[_activeIndex!].scale = v),
-                    ),
+                  // Baris 1: Zoom + Rotasi
+                  Row(
+                    children: [
+                      const Icon(Icons.zoom_in, size: 18),
+                      Expanded(
+                        child: Slider(
+                          value: _items[_activeIndex!].scale,
+                          min: 0.1,
+                          max: 1.5,
+                          onChanged: (v) => setState(
+                              () => _items[_activeIndex!].scale = v),
+                        ),
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.rotate_right, size: 18),
-                  Expanded(
-                    child: Slider(
-                      value: _items[_activeIndex!].rotation,
-                      min: -3.14159,
-                      max: 3.14159,
-                      divisions: 24,
-                      onChanged: (v) => setState(
-                          () => _items[_activeIndex!].rotation = v),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.rotate_right, size: 18),
+                      Expanded(
+                        child: Slider(
+                          value: _items[_activeIndex!].rotation,
+                          min: -3.14159,
+                          max: 3.14159,
+                          divisions: 24,
+                          onChanged: (v) => setState(
+                              () => _items[_activeIndex!].rotation = v),
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.restart_alt, size: 18),
-                    tooltip: 'Reset Rotasi',
-                    onPressed: () => setState(
-                        () => _items[_activeIndex!].rotation = 0),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.delete,
-                        color: Theme.of(context).colorScheme.error),
-                    onPressed: () => setState(() {
-                      _items.removeAt(_activeIndex!);
-                      _activeIndex = null;
-                    }),
+                  // Baris 2: Reset + Hapus
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => setState(() {
+                          _items[_activeIndex!].scale = 0.4;
+                          _items[_activeIndex!].rotation = 0;
+                        }),
+                        icon: const Icon(Icons.restart_alt, size: 18),
+                        label: const Text('Reset'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => setState(() {
+                          _items.removeAt(_activeIndex!);
+                          _activeIndex = null;
+                        }),
+                        icon: Icon(Icons.delete,
+                            color: scheme.error, size: 18),
+                        label: Text('Hapus',
+                            style: TextStyle(color: scheme.error)),
+                      ),
+                    ],
                   ),
                 ],
               ),
