@@ -20,6 +20,7 @@ class GridPreview extends StatefulWidget {
   final List<OverlayItem>? overlays;
   final void Function(int, Offset)? onOverlayMove;
   final void Function(int)? onOverlayTap;
+  final void Function(int)? onCellTap;
 
   const GridPreview({
     super.key,
@@ -38,6 +39,7 @@ class GridPreview extends StatefulWidget {
     this.overlays,
     this.onOverlayMove,
     this.onOverlayTap,
+    this.onCellTap,
   });
 
   @override
@@ -234,7 +236,9 @@ class _GridPreviewState extends State<GridPreview> {
                     top: cell.y * h + widget.borderWidth / 2,
                     width: cell.w * w - widget.borderWidth,
                     height: cell.h * h - widget.borderWidth,
-                    child: ClipRRect(
+                    child: GestureDetector(
+                      onTap: widget.onCellTap != null ? () => widget.onCellTap!(i) : null,
+                      child: ClipRRect(
                       borderRadius: BorderRadius.circular(widget.cornerRadius),
                       child: Container(
                         decoration: BoxDecoration(
@@ -250,6 +254,7 @@ class _GridPreviewState extends State<GridPreview> {
                             ? _buildTransformedImage(path, i)
                             : null,
                       ),
+                    ),
                     ),
                   );
                 }).toList(),

@@ -399,7 +399,22 @@ class _EditorScreenState extends State<EditorScreen> {
       if (result.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Tersimpan: ${result.path}')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('Tersimpan: ${result.path}')),
+                ],
+              ),
+              backgroundColor: Colors.green.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(12),
+              duration: const Duration(seconds: 3),
+            ),
           );
         }
       } else {
@@ -489,6 +504,9 @@ class _EditorScreenState extends State<EditorScreen> {
                       });
                     },
                     onOverlayTap: _editOverlay,
+                    onCellTap: (i) {
+                      setState(() => _activeCellIndex = i);
+                    },
                   ),
                 ),
               ),
@@ -1001,11 +1019,17 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Widget _buildToolbar() {
     final scheme = Theme.of(context).colorScheme;
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 68,
+    return Container(
+      decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: scheme.outlineVariant, width: 1),
+        ),
+      ),
+      child: SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 68,
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),

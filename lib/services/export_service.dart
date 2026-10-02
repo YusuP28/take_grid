@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -55,50 +56,30 @@ class ExportService {
     required ExportQuality quality,
   }) async {
     try {
-      // Decode → resize → encode sesuai format
-      final decoded = img.decodeImage(pngBytes);
-      if (decoded == null) {
-        return ExportResult(success: false, error: 'Gagal decode gambar');
-      }
-
-      // Resize ke target quality (square)
-      final target = quality.px;
-      final resized = img.copyResize(
-        decoded,
-        width: target,
-        height: target,
-        interpolation: img.Interpolation.cubic,
+      // Proses di isolate (compute)
+      final output = await compute(
+        _processImage,
+        _ProcessArgs(pngBytes, format.index, quality.px),
       );
-
-      Uint8List output;
-      String ext;
-      if (format == ExportFormat.jpg) {
-        output = Uint8List.fromList(img.encodeJpg(resized, quality: 92));
-        ext = 'jpg';
-      } else {
-        output = Uint8List.fromList(img.encodePng(resized));
-        ext = 'png';
+      if (output == null) {
+        return ExportResult(success: false, error: 'Gagal proses gambar');
       }
 
-      // Save ke galeri via media_store_plus
-      final ms = MediaStore();
+      final ext = format == ExportFormat.jpg ? 'jpg' : 'png';
       final filename = 'TakeGrid_${DateTime.now().millisecondsSinceEpoch}.$ext';
 
       final dir = await getTemporaryDirectory();
       final tempFile = File('${dir.path}/$filename');
       await tempFile.writeAsBytes(output);
 
-      // Save ke folder Pictures/TakeGrid
+      final ms = MediaStore();
       await ms.saveFile(
         tempFilePath: tempFile.path,
         dirType: DirType.download,
         dirName: DirType.download.defaults,
       );
 
-      // Hapus temp
-      try {
-        await tempFile.delete();
-      } catch (_) {}
+      try { await tempFile.delete(); } catch (_) {}
 
       return ExportResult(success: true, path: filename);
     } catch (e) {
@@ -171,5 +152,36 @@ class ExportService {
     } catch (_) {
       return true;
     }
+  }
+}
+
+class _ProcessArgs {
+  final Uint8List bytes;
+  final int formatIndex;
+  final int px;
+  _ProcessArgs(this.bytes, this.formatIndex, this.px);
+}
+
+/// Fungsi di isolate — decode, resize, encode
+Uint8List? _processImage(_ProcessArgs args) {
+  try {
+    final decoded = img.decodeImage(args.bytes);
+    if (decoded == null) return null;
+
+    final resized = img.copyResize(
+      decoded,
+      width: args.px,
+      height: args.px,
+      interpolation: img.Interpolation.cubic,
+    );
+
+    if (args.formatIndex == 0) {
+      // JPG
+      return Uint8List.fromList(img.encodeJpg(resized, quality: 92));
+    } else {
+      return Uint8List.fromList(img.encodePng(resized));
+    }
+  } catch (_) {
+    return null;
   }
 }
