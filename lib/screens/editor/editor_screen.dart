@@ -9,6 +9,7 @@ import '../../models/grid_project.dart';
 import '../../models/grid_template.dart';
 import '../../widgets/grid_preview.dart';
 import '../../services/export_service.dart';
+import '../../services/editor_settings_service.dart';
 
 enum BottomPanel { none, border, corner, background, text, emoji, transform }
 
@@ -41,6 +42,26 @@ class _EditorScreenState extends State<EditorScreen> {
         _project.setImage(i, widget.initialImages![i]);
       }
     }
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    final svc = EditorSettingsService();
+    await svc.load();
+    if (!mounted) return;
+    setState(() {
+      if (svc.borderWidth != null) _project.borderWidth = svc.borderWidth!;
+      if (svc.borderColor != null) _project.borderColor = svc.borderColor!;
+      if (svc.cornerRadius != null) _project.cornerRadius = svc.cornerRadius!;
+      if (svc.bgColor != null) _project.backgroundColor = svc.bgColor!;
+      if (svc.gradientEnd != null) _project.gradientEndColor = svc.gradientEnd!;
+      if (svc.bgTypeIndex != null && svc.bgTypeIndex! < BackgroundType.values.length) {
+        _project.backgroundType = BackgroundType.values[svc.bgTypeIndex!];
+      }
+      if (svc.ratioIndex != null && svc.ratioIndex! < GridRatio.values.length) {
+        _project.ratio = GridRatio.values[svc.ratioIndex!];
+      }
+    });
   }
 
   // ============= PICK IMAGE =============
@@ -647,7 +668,10 @@ class _EditorScreenState extends State<EditorScreen> {
               Slider(
                 value: _project.borderWidth, min: 0, max: 20, divisions: 40,
                 label: '${_project.borderWidth.toStringAsFixed(1)}px',
-                onChanged: (v) => setState(() => _project.borderWidth = v),
+                onChanged: (v) {
+                  setState(() => _project.borderWidth = v);
+                  EditorSettingsService().saveBorderWidth(v);
+                },
               ),
             ],
           ),
@@ -670,7 +694,10 @@ class _EditorScreenState extends State<EditorScreen> {
               ]),
               Slider(
                 value: _project.cornerRadius, min: 0, max: 30, divisions: 30,
-                onChanged: (v) => setState(() => _project.cornerRadius = v),
+                onChanged: (v) {
+                  setState(() => _project.cornerRadius = v);
+                  EditorSettingsService().saveCornerRadius(v);
+                },
               ),
             ],
           ),
@@ -686,14 +713,20 @@ class _EditorScreenState extends State<EditorScreen> {
                 ChoiceChip(
                   label: Text(t.label),
                   selected: _project.backgroundType == t,
-                  onSelected: (_) => setState(() => _project.backgroundType = t),
+                  onSelected: (_) {
+                    setState(() => _project.backgroundType = t);
+                    EditorSettingsService().saveBgType(BackgroundType.values.indexOf(t));
+                  },
                 )).toList(),
               ),
               const SizedBox(height: 12),
               if (_project.backgroundType == BackgroundType.solid)
                 _colorSwatches(
                   _project.backgroundColor,
-                  (c) => setState(() => _project.backgroundColor = c),
+                  (c) {
+                    setState(() => _project.backgroundColor = c);
+                    EditorSettingsService().saveBgColor(c);
+                  },
                 ),
               if (_project.backgroundType == BackgroundType.gradient) ...[
                 const Text('Warna Awal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),

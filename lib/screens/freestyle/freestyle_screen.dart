@@ -166,7 +166,12 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
       body: Column(
         children: [
           Expanded(
-            child: Container(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: _activeIndex != null ? 60 : 0,
+              ),
+              child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               color: scheme.surfaceContainerHighest,
               padding: const EdgeInsets.all(16),
               child: Center(
@@ -225,6 +230,7 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
               ),
             ),
           ),
+          ),
           // Toolbar kontrol
           if (_activeIndex != null)
             Container(
@@ -242,10 +248,22 @@ class _FreeStyleScreenState extends State<FreeStyleScreen> {
                           () => _items[_activeIndex!].scale = v),
                     ),
                   ),
+                  const Icon(Icons.rotate_right, size: 18),
+                  Expanded(
+                    child: Slider(
+                      value: _items[_activeIndex!].rotation,
+                      min: -3.14159,
+                      max: 3.14159,
+                      divisions: 24,
+                      onChanged: (v) => setState(
+                          () => _items[_activeIndex!].rotation = v),
+                    ),
+                  ),
                   IconButton(
-                    icon: const Icon(Icons.rotate_right),
+                    icon: const Icon(Icons.restart_alt, size: 18),
+                    tooltip: 'Reset Rotasi',
                     onPressed: () => setState(
-                        () => _items[_activeIndex!].rotation += 0.1),
+                        () => _items[_activeIndex!].rotation = 0),
                   ),
                   IconButton(
                     icon: Icon(Icons.delete,
