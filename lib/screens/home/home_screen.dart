@@ -171,7 +171,7 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Pilih Template',
+            'Template Grid',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -222,18 +222,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          Text(
-            'Atau Pilih Template',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          GridView.builder(
+GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

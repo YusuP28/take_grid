@@ -764,14 +764,22 @@ class _EditorScreenState extends State<EditorScreen> {
         );
 
       case BottomPanel.filter:
+        // Auto-pilih cell pertama kalau belum ada
         if (_activeCellIndex == null) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Pilih cell dulu di bawah',
-                  style: TextStyle(color: Colors.grey)),
-            ),
-          );
+          final firstFilled = _project.imagePaths.indexWhere((p) => p != null);
+          if (firstFilled == -1) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Belum ada foto. Isi foto dulu.',
+                    style: TextStyle(color: Colors.grey)),
+              ),
+            );
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _activeCellIndex = firstFilled);
+          });
+          return const Center(child: CircularProgressIndicator());
         }
         final t = _project.transforms[_activeCellIndex!];
         return SingleChildScrollView(
@@ -998,17 +1006,19 @@ class _EditorScreenState extends State<EditorScreen> {
       child: Container(
         height: 68,
         color: scheme.surfaceContainerLow,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _toolBtn(Icons.line_weight, 'Border', BottomPanel.border, scheme),
-            _toolBtn(Icons.rounded_corner, 'Sudut', BottomPanel.corner, scheme),
-            _toolBtn(Icons.palette_outlined, 'Warna', BottomPanel.background, scheme),
-            _toolBtn(Icons.tune, 'Filter', BottomPanel.filter, scheme),
-            _toolBtn(Icons.text_fields, 'Teks', BottomPanel.text, scheme),
-            _toolBtn(Icons.emoji_emotions_outlined, 'Emoji', BottomPanel.emoji, scheme),
-          ],
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Row(
+            children: [
+              _toolBtn(Icons.line_weight, 'Border', BottomPanel.border, scheme),
+              _toolBtn(Icons.rounded_corner, 'Sudut', BottomPanel.corner, scheme),
+              _toolBtn(Icons.palette_outlined, 'Warna', BottomPanel.background, scheme),
+              _toolBtn(Icons.tune, 'Filter', BottomPanel.filter, scheme),
+              _toolBtn(Icons.text_fields, 'Teks', BottomPanel.text, scheme),
+              _toolBtn(Icons.emoji_emotions_outlined, 'Emoji', BottomPanel.emoji, scheme),
+            ],
+          ),
         ),
       ),
     );
