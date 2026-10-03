@@ -6,7 +6,6 @@ import '../../models/grid_project.dart';
 import '../../services/smart_grid_service.dart';
 import '../../widgets/grid_preview.dart';
 import '../editor/editor_screen.dart';
-import '../layout_picker/layout_picker_screen.dart';
 import '../freestyle/freestyle_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -152,12 +151,16 @@ class HomeScreen extends StatelessWidget {
     }
 
     final paths = files.take(20).map((f) => f.path).toList();
+    final template = SmartGridService.forPhotoCount(paths.length);
 
     if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => LayoutPickerScreen(imagePaths: paths),
+        builder: (_) => EditorScreen(
+          template: template,
+          initialImages: paths,
+        ),
       ),
     );
   }
