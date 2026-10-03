@@ -478,7 +478,8 @@ class _EditorScreenState extends State<EditorScreen> {
                 child: Container(
                   color: scheme.surfaceContainerHighest,
                   padding: const EdgeInsets.all(16),
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: RepaintBoundary(
                       key: _exportKey,
                       child: GridPreview(
