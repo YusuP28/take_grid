@@ -21,6 +21,8 @@ class GridPreview extends StatefulWidget {
   final void Function(int, Offset)? onOverlayMove;
   final void Function(int)? onOverlayTap;
   final void Function(int)? onCellTap;
+  final void Function(int idx, Offset delta)? onCellPan;
+  final void Function(int idx)? onCellPanEnd;
 
   const GridPreview({
     super.key,
@@ -40,6 +42,8 @@ class GridPreview extends StatefulWidget {
     this.onOverlayMove,
     this.onOverlayTap,
     this.onCellTap,
+    this.onCellPan,
+    this.onCellPanEnd,
   });
 
   @override
@@ -238,6 +242,21 @@ class _GridPreviewState extends State<GridPreview> {
                     height: cell.h * h - widget.borderWidth,
                     child: GestureDetector(
                       onTap: widget.onCellTap != null ? () => widget.onCellTap!(i) : null,
+                      onPanUpdate: (widget.onCellPan != null)
+                          ? (details) {
+                              final cw = cell.w * w;
+                              final ch = cell.h * h;
+                              if (cw > 0 && ch > 0) {
+                                widget.onCellPan!(
+                                  i,
+                                  Offset(details.delta.dx / cw, details.delta.dy / ch),
+                                );
+                              }
+                            }
+                          : null,
+                      onPanEnd: widget.onCellPanEnd != null
+                          ? (_) => widget.onCellPanEnd!(i)
+                          : null,
                       child: ClipRRect(
                       borderRadius: BorderRadius.circular(widget.cornerRadius),
                       child: Container(
