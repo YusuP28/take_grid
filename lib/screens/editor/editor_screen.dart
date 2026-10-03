@@ -517,17 +517,15 @@ class _EditorScreenState extends State<EditorScreen> {
                         onCellTap: (i) {
                           setState(() => _activeCellIndex = i);
                         },
-                        onCellPan: (i, delta) {
+                        onCellTransform: (i, zoom, offset) {
                           setState(() {
                             final t = _project.transforms[i];
-                            t.offset = Offset(
-                              (t.offset.dx + delta.dx).clamp(-0.5, 0.5),
-                              (t.offset.dy + delta.dy).clamp(-0.5, 0.5),
-                            );
+                            t.zoom = zoom;
+                            t.offset = offset;
                           });
                         },
-                        onCellPanEnd: (i) {
-                          // optional: save state / trigger re-render
+                        onCellTransformEnd: (i) {
+                          // optional: save state
                         },
                       ),
                     ),

@@ -21,8 +21,8 @@ class GridPreview extends StatefulWidget {
   final void Function(int, Offset)? onOverlayMove;
   final void Function(int)? onOverlayTap;
   final void Function(int)? onCellTap;
-  final void Function(int idx, Offset delta)? onCellPan;
-  final void Function(int idx)? onCellPanEnd;
+  final void Function(int idx, double zoom, Offset offset)? onCellTransform;
+  final void Function(int idx)? onCellTransformEnd;
 
   const GridPreview({
     super.key,
@@ -42,8 +42,8 @@ class GridPreview extends StatefulWidget {
     this.onOverlayMove,
     this.onOverlayTap,
     this.onCellTap,
-    this.onCellPan,
-    this.onCellPanEnd,
+    this.onCellTransform,
+    this.onCellTransformEnd,
   });
 
   @override
@@ -54,6 +54,8 @@ class _GridPreviewState extends State<GridPreview> {
   // Local state untuk drag — biar real-time tanpa rebuild parent
   final Map<int, Offset> _dragPositions = {};
   int? _draggingIndex;
+  final Map<int, double> _scaleStartZoom = {};
+  final Map<int, Offset> _scaleStartOffset = {};
 
   Widget _buildBackground() {
     switch (widget.backgroundType) {
@@ -242,20 +244,43 @@ class _GridPreviewState extends State<GridPreview> {
                     height: cell.h * h - widget.borderWidth,
                     child: GestureDetector(
                       onTap: widget.onCellTap != null ? () => widget.onCellTap!(i) : null,
-                      onPanUpdate: (widget.onCellPan != null)
-                          ? (details) {
-                              final cw = cell.w * w;
-                              final ch = cell.h * h;
-                              if (cw > 0 && ch > 0) {
-                                widget.onCellPan!(
-                                  i,
-                                  Offset(details.delta.dx / cw, details.delta.dy / ch),
-                                );
+                      onScaleStart: widget.onCellTransform != null
+                          ? (_) {
+                              final t = (widget.transforms != null && i < widget.transforms!.length)
+                                  ? widget.transforms![i]
+                                  : null;
+                              if (t != null) {
+                                _scaleStartZoom[i] = t.zoom;
+                                _scaleStartOffset[i] = t.offset;
                               }
                             }
                           : null,
-                      onPanEnd: widget.onCellPanEnd != null
-                          ? (_) => widget.onCellPanEnd!(i)
+                      onScaleUpdate: widget.onCellTransform != null
+                          ? (details) {
+                              final t = (widget.transforms != null && i < widget.transforms!.length)
+                                  ? widget.transforms![i]
+                                  : null;
+                              if (t == null) return;
+                              final baseZoom = _scaleStartZoom[i] ?? t.zoom;
+                              final baseOff = _scaleStartOffset[i] ?? t.offset;
+                              final cw = cell.w * w;
+                              final ch = cell.h * h;
+                              if (cw <= 0 || ch <= 0) return;
+
+                              final newZoom = (baseZoom * details.scale).clamp(1.0, 5.0);
+                              final newOffset = Offset(
+                                (baseOff.dx + details.focalPointDelta.dx / cw).clamp(-0.5, 0.5),
+                                (baseOff.dy + details.focalPointDelta.dy / ch).clamp(-0.5, 0.5),
+                              );
+                              widget.onCellTransform!(i, newZoom, newOffset);
+                            }
+                          : null,
+                      onScaleEnd: widget.onCellTransformEnd != null
+                          ? (_) {
+                              _scaleStartZoom.remove(i);
+                              _scaleStartOffset.remove(i);
+                              widget.onCellTransformEnd!(i);
+                            }
                           : null,
                       child: ClipRRect(
                       borderRadius: BorderRadius.circular(widget.cornerRadius),
