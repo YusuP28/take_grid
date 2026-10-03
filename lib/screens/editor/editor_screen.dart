@@ -1184,8 +1184,8 @@ class _EditorScreenState extends State<EditorScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
             children: [
-              _toolBtn(Icons.grid_view, 'Template', BottomPanel.none, scheme, onTapOverride: _showTemplatePicker),
-              _toolBtn(Icons.rotate_right, 'Rotasi', BottomPanel.none, scheme, onTapOverride: _showTransformPanel),
+              _toolBtn(Icons.grid_view, 'Template', BottomPanel.none, scheme, onTapOverride: _showTemplatePicker, forceActive: false),
+              _toolBtn(Icons.rotate_right, 'Rotasi', BottomPanel.none, scheme, onTapOverride: _showTransformPanel, forceActive: _panel == BottomPanel.transform),
               _toolBtn(Icons.line_weight, 'Border', BottomPanel.border, scheme),
               _toolBtn(Icons.rounded_corner, 'Sudut', BottomPanel.corner, scheme),
               _toolBtn(Icons.palette_outlined, 'Warna', BottomPanel.background, scheme),
@@ -1226,8 +1226,8 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
-  Widget _toolBtn(IconData icon, String label, BottomPanel panel, ColorScheme scheme, {VoidCallback? onTapOverride}) {
-    final active = _panel == panel;
+  Widget _toolBtn(IconData icon, String label, BottomPanel panel, ColorScheme scheme, {VoidCallback? onTapOverride, bool? forceActive}) {
+    final active = forceActive ?? (_panel == panel && panel != BottomPanel.none);
     return InkWell(
       onTap: () {
         if (onTapOverride != null) {
