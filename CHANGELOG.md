@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.1] - 2026-10-04
+
+### Added
+- Drag foto dalam cell pakai jari (pan offset)
+- Pinch-to-zoom foto dalam cell (skala 1-5x)
+
+### Fixed
+- Pan foto akumulatif — geser smooth ke segala arah
+- Sebelumnya: foto cuma geser 1x kecil lalu diam
+
+
 ## [1.1.0] - 2026-10-03
 
 ### Added
