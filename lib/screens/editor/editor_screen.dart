@@ -1147,6 +1147,31 @@ class _EditorScreenState extends State<EditorScreen> {
     });
   }
 
+  void _showTransformPanel() {
+    // Kalau belum ada foto aktif, auto-pilih cell pertama yang ada foto
+    if (_activeCellIndex == null) {
+      final firstFilled = _project.imagePaths.indexWhere((p) => p != null);
+      if (firstFilled == -1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Isi foto dulu di salah satu cell.')),
+        );
+        return;
+      }
+      setState(() {
+        _activeCellIndex = firstFilled;
+        _panel = BottomPanel.transform;
+      });
+    } else {
+      setState(() {
+        if (_panel == BottomPanel.transform) {
+          _panel = BottomPanel.none;
+        } else {
+          _panel = BottomPanel.transform;
+        }
+      });
+    }
+  }
+
   Widget _buildToolbar() {
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -1160,6 +1185,7 @@ class _EditorScreenState extends State<EditorScreen> {
           child: Row(
             children: [
               _toolBtn(Icons.grid_view, 'Template', BottomPanel.none, scheme, onTapOverride: _showTemplatePicker),
+              _toolBtn(Icons.rotate_right, 'Rotasi', BottomPanel.none, scheme, onTapOverride: _showTransformPanel),
               _toolBtn(Icons.line_weight, 'Border', BottomPanel.border, scheme),
               _toolBtn(Icons.rounded_corner, 'Sudut', BottomPanel.corner, scheme),
               _toolBtn(Icons.palette_outlined, 'Warna', BottomPanel.background, scheme),
