@@ -461,15 +461,20 @@ class _EditorScreenState extends State<EditorScreen> {
           ),
         ],
       ),
-      body: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          // LAYER 1: MAIN COLUMN — canvas + cell picker + toolbar (DIAM)
-          Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final canvasHeight = constraints.maxHeight * 0.55;
+          final bottomHeight = constraints.maxHeight - canvasHeight;
+
+          return Stack(
+            clipBehavior: Clip.hardEdge,
             children: [
-              // Preview area (canvas)
-              Expanded(
-                flex: 5,
+              // ===== LAYER 1: CANVAS (fixed height, DIAM) =====
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: canvasHeight,
                 child: Container(
                   color: scheme.surfaceContainerHighest,
                   padding: const EdgeInsets.all(16),
@@ -516,14 +521,16 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
               ),
 
-              // Bottom area — info + cell picker + toolbar
-              Expanded(
-                flex: 4,
+              // ===== LAYER 2: BOTTOM (info + cell picker + toolbar) =====
+              Positioned(
+                top: canvasHeight,
+                left: 0,
+                right: 0,
+                height: bottomHeight,
                 child: Container(
                   color: scheme.surface,
                   child: Column(
                     children: [
-                      // Info + clear
                       Padding(
                         padding: const EdgeInsets.all(8),
                         child: Row(
@@ -546,46 +553,44 @@ class _EditorScreenState extends State<EditorScreen> {
                           ],
                         ),
                       ),
-                      // Cell picker (selalu tampil)
                       Expanded(child: _buildCellPicker()),
-                      // Toolbar (fixed)
                       _buildToolbar(),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
 
-          // LAYER 2: PANEL OVERLAY — nutup cell picker, TIDAK geser canvas
-          if (_panel != BottomPanel.none)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 68,
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 200),
-                decoration: BoxDecoration(
-                  color: scheme.surface,
-                  border: Border(
-                    top: BorderSide(color: scheme.outlineVariant, width: 1),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
+              // ===== LAYER 3: PANEL OVERLAY =====
+              if (_panel != BottomPanel.none)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 68,
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: scheme.surface,
+                      border: Border(
+                        top: BorderSide(color: scheme.outlineVariant, width: 1),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
                     ),
-                  ],
+                    child: _buildPanelContent(),
+                  ),
                 ),
-                child: _buildPanelContent(),
-              ),
-            ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
-  // ============= PANEL CONTENT =============
+
   Widget _buildPanelContent() {
     final scheme = Theme.of(context).colorScheme;
 
