@@ -56,6 +56,8 @@ class _GridPreviewState extends State<GridPreview> {
   int? _draggingIndex;
   final Map<int, double> _scaleStartZoom = {};
   final Map<int, Offset> _scaleStartOffset = {};
+  final Map<int, Offset> _liveOffset = {};
+  final Map<int, double> _liveZoom = {};
 
   Widget _buildBackground() {
     switch (widget.backgroundType) {
@@ -252,6 +254,8 @@ class _GridPreviewState extends State<GridPreview> {
                               if (t != null) {
                                 _scaleStartZoom[i] = t.zoom;
                                 _scaleStartOffset[i] = t.offset;
+                                _liveZoom[i] = t.zoom;
+                                _liveOffset[i] = t.offset;
                               }
                             }
                           : null,
@@ -262,16 +266,22 @@ class _GridPreviewState extends State<GridPreview> {
                                   : null;
                               if (t == null) return;
                               final baseZoom = _scaleStartZoom[i] ?? t.zoom;
-                              final baseOff = _scaleStartOffset[i] ?? t.offset;
                               final cw = cell.w * w;
                               final ch = cell.h * h;
                               if (cw <= 0 || ch <= 0) return;
 
+                              // Zoom: relatif ke baseline
                               final newZoom = (baseZoom * details.scale).clamp(1.0, 5.0);
+
+                              // Pan: akumulatif dari live state (bukan baseOff)
+                              final liveOff = _liveOffset[i] ?? _scaleStartOffset[i] ?? t.offset;
                               final newOffset = Offset(
-                                (baseOff.dx + details.focalPointDelta.dx / cw).clamp(-0.5, 0.5),
-                                (baseOff.dy + details.focalPointDelta.dy / ch).clamp(-0.5, 0.5),
+                                (liveOff.dx + details.focalPointDelta.dx / cw).clamp(-0.5, 0.5),
+                                (liveOff.dy + details.focalPointDelta.dy / ch).clamp(-0.5, 0.5),
                               );
+                              _liveOffset[i] = newOffset;
+                              _liveZoom[i] = newZoom;
+
                               widget.onCellTransform!(i, newZoom, newOffset);
                             }
                           : null,
@@ -279,6 +289,8 @@ class _GridPreviewState extends State<GridPreview> {
                           ? (_) {
                               _scaleStartZoom.remove(i);
                               _scaleStartOffset.remove(i);
+                              _liveZoom.remove(i);
+                              _liveOffset.remove(i);
                               widget.onCellTransformEnd!(i);
                             }
                           : null,
