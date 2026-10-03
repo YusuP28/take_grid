@@ -6,6 +6,7 @@ import '../../models/grid_project.dart';
 import '../../services/smart_grid_service.dart';
 import '../../widgets/grid_preview.dart';
 import '../editor/editor_screen.dart';
+import '../layout_picker/layout_picker_screen.dart';
 import '../freestyle/freestyle_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -140,27 +141,23 @@ class HomeScreen extends StatelessWidget {
     final files = await picker.pickMultiImage(
       imageQuality: 90,
       maxWidth: 2048,
-      limit: 12,
+      limit: 20,
     );
     if (files.isEmpty) return;
 
-    final count = files.length > 12 ? 12 : files.length;
-    if (files.length > 12 && context.mounted) {
+    if (files.length > 20 && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Max 12 foto. Ambil 12 teratas.')),
+        const SnackBar(content: Text('Max 20 foto. Ambil 20 teratas.')),
       );
     }
 
-    final template = SmartGridService.forPhotoCount(count);
+    final paths = files.take(20).map((f) => f.path).toList();
 
     if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => EditorScreen(
-          template: template,
-          initialImages: files.take(count).map((f) => f.path).toList(),
-        ),
+        builder: (_) => LayoutPickerScreen(imagePaths: paths),
       ),
     );
   }
