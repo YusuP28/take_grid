@@ -10,6 +10,7 @@ import '../../models/grid_template.dart';
 import '../../widgets/grid_preview.dart';
 import '../../services/export_service.dart';
 import '../../services/editor_settings_service.dart';
+import '../../services/smart_grid_service.dart';
 
 enum BottomPanel { none, border, corner, background, text, emoji, transform, filter }
 
@@ -439,7 +440,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.template.name),
+        title: Text(_project.template.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_photo_alternate),
@@ -1034,6 +1035,118 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  Future<void> _showTemplatePicker() async {
+    final variants = SmartGridService.variantsFor(_project.imagePaths.length);
+    final picked = await showModalBottomSheet<GridTemplate>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Pilih Template',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            SizedBox(
+              height: 110,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: variants.length,
+                itemBuilder: (c, i) {
+                  final tpl = variants[i];
+                  final isSelected = tpl.id == _project.template.id;
+                  final scheme = Theme.of(context).colorScheme;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(ctx, tpl),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: scheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected ? scheme.primary : scheme.outlineVariant,
+                                width: isSelected ? 2.5 : 1,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: CustomPaint(
+                              painter: _MiniGridPainter(template: tpl),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: 76,
+                            child: Text(
+                              tpl.name,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+
+    if (picked == null) return;
+    if (picked.id == _project.template.id) return;
+
+    setState(() {
+      // Simpan settings lama
+      final oldImages = List<String?>.from(_project.imagePaths);
+      final oldBorder = _project.borderWidth;
+      final oldBorderColor = _project.borderColor;
+      final oldBg = _project.backgroundColor;
+      final oldGrad = _project.gradientEndColor;
+      final oldBgType = _project.backgroundType;
+      final oldRatio = _project.ratio;
+      final oldCorner = _project.cornerRadius;
+      final oldOverlays = List<OverlayItem>.from(_project.overlays);
+
+      // Buat project baru dengan template baru
+      final newProject = GridProject(template: picked);
+      newProject.borderWidth = oldBorder;
+      newProject.borderColor = oldBorderColor;
+      newProject.backgroundColor = oldBg;
+      newProject.gradientEndColor = oldGrad;
+      newProject.backgroundType = oldBgType;
+      newProject.ratio = oldRatio;
+      newProject.cornerRadius = oldCorner;
+      newProject.overlays = oldOverlays;
+
+      // Copy foto yang muat
+      for (int i = 0; i < newProject.imagePaths.length; i++) {
+        if (i < oldImages.length) {
+          newProject.imagePaths[i] = oldImages[i];
+        }
+      }
+
+      _project = newProject;
+    });
+  }
+
   Widget _buildToolbar() {
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -1046,6 +1159,7 @@ class _EditorScreenState extends State<EditorScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
             children: [
+              _toolBtn(Icons.grid_view, 'Template', BottomPanel.none, scheme, onTapOverride: _showTemplatePicker),
               _toolBtn(Icons.line_weight, 'Border', BottomPanel.border, scheme),
               _toolBtn(Icons.rounded_corner, 'Sudut', BottomPanel.corner, scheme),
               _toolBtn(Icons.palette_outlined, 'Warna', BottomPanel.background, scheme),
@@ -1086,10 +1200,14 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
-  Widget _toolBtn(IconData icon, String label, BottomPanel panel, ColorScheme scheme) {
+  Widget _toolBtn(IconData icon, String label, BottomPanel panel, ColorScheme scheme, {VoidCallback? onTapOverride}) {
     final active = _panel == panel;
     return InkWell(
       onTap: () {
+        if (onTapOverride != null) {
+          onTapOverride();
+          return;
+        }
         setState(() {
           if (_panel == panel) {
             _panel = BottomPanel.none;
@@ -1123,4 +1241,37 @@ class _EditorScreenState extends State<EditorScreen> {
       ),
     );
   }
+}
+
+/// Mini grid painter untuk preview layout template.
+class _MiniGridPainter extends CustomPainter {
+  final GridTemplate template;
+  _MiniGridPainter({required this.template});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()
+      ..color = const Color(0xFFBDBDBD)
+      ..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..color = const Color(0xFF757575)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    for (final cell in template.cells) {
+      final rect = Rect.fromLTWH(
+        cell.x * size.width,
+        cell.y * size.height,
+        cell.w * size.width,
+        cell.h * size.height,
+      );
+      final r = rect.deflate(1);
+      canvas.drawRect(r, fill);
+      canvas.drawRect(r, stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniGridPainter old) =>
+      old.template.id != template.id;
 }
