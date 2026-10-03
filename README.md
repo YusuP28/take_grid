@@ -6,8 +6,12 @@ template, filter, overlay, dan free-style canvas.
 ## Fitur
 
 ### Grid Template
-- 8 template: 2×2, 3×3, 2×1, 1×2, 3×1, 1×3, 2×2 Big Left, 3×3 Big Center
-- Auto Grid: pilih 1-12 foto → smart layout otomatis
+- Auto Grid: pilih 1-20 foto → langsung masuk editor
+- **Varian layout cerdas** per jumlah foto (6-11 varian):
+  - Uniform, Big Center, Big Top/Bottom/Left
+  - Mosaic, Golden Ratio, Corner, Diagonal
+  - Polaroid, Panorama, Strip
+- Ganti layout kapan aja via tombol **Template** di editor
 - Rasio: 11 pilihan (1:1, 4:5, 9:16, dll)
 
 ### Free Style Canvas
@@ -41,10 +45,10 @@ Semua build via **GitHub Actions**:
 - Release split APK (arm64, armeabi-v7a, x86_64)
 
 ## Rilis
-- **v1.0.0+2** — current (lihat CHANGELOG.md)
+- **v1.1.0** — current (lihat CHANGELOG.md)
 
 ## Known Issues
-- Canvas masih sedikit bergeser saat panel overlay muncul (perbaikan in-progress)
+- (kosong — semua fixed di v1.1.0)
 
 ## Lisensi
 Private project.

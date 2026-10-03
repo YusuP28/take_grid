@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.0] - 2026-10-03
+
+### Added
+- Auto Grid: max foto naik 12 → 20
+- Auto Grid langsung masuk editor (skip screen perantara)
+- Tombol Template di editor — ganti layout tanpa keluar
+- Varian layout baru: Mosaic, Golden Ratio, Corner, Diagonal, Polaroid, Panorama, Strip
+- 6-11 varian template per jumlah foto (2-9 foto)
+- Tombol Rotasi di toolbar — akses cepat transform per cell
+- Panel transform: zoom (1-3x), rotasi (-180° to 180°), flip H/V
+
+### Fixed
+- Tombol Template & Rotasi tidak double-highlight
+- Canvas posisi di atas (konsisten sebelum/sesudah panel)
+- Ganti template pertahankan border, sudut, warna, overlay, foto
+
+### Removed
+- LayoutPickerScreen (digantikan tombol Template di editor)
+
+
 ## [1.0.0+2] - 2026-10-02
 
 ### Added
