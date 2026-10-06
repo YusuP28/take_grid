@@ -65,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Take Grid'),
-            subtitle: Text('Versi 1.0.0'),
+            subtitle: Text('Versi 1.2.0'),
           ),
           ListTile(
             leading: const Icon(Icons.grid_on),
