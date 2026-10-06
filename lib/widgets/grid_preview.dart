@@ -138,7 +138,7 @@ class _GridPreviewState extends State<GridPreview> {
 
     Widget img = Image.file(
       File(path),
-      fit: BoxFit.contain,  // Collage mode: foto utuh, center
+      fit: BoxFit.cover,  // Cover cell (collage mode: auto-fit + bisa geser)
       gaplessPlayback: true,
       errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
     );
@@ -275,9 +275,13 @@ class _GridPreviewState extends State<GridPreview> {
 
                               // Pan: akumulatif dari live state (bukan baseOff)
                               final liveOff = _liveOffset[i] ?? _scaleStartOffset[i] ?? t.offset;
+                              // Clamp diperluas supaya user bisa geser
+                              // seluruh area foto di luar cell (untuk crop)
+                              final maxOffX = ((t.zoom > 1.0) ? t.zoom : 1.0);
+                              final maxOffY = ((t.zoom > 1.0) ? t.zoom : 1.0);
                               final newOffset = Offset(
-                                (liveOff.dx + details.focalPointDelta.dx / cw).clamp(-0.5, 0.5),
-                                (liveOff.dy + details.focalPointDelta.dy / ch).clamp(-0.5, 0.5),
+                                (liveOff.dx + details.focalPointDelta.dx / cw).clamp(-maxOffX, maxOffX),
+                                (liveOff.dy + details.focalPointDelta.dy / ch).clamp(-maxOffY, maxOffY),
                               );
                               _liveOffset[i] = newOffset;
                               _liveZoom[i] = newZoom;
