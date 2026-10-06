@@ -136,45 +136,89 @@ class _GridPreviewState extends State<GridPreview> {
         ? widget.transforms![index]
         : CellTransform();
 
-    Widget img = Image.file(
-      File(path),
-      fit: BoxFit.cover,  // Cover cell (collage mode: auto-fit + bisa geser)
-      gaplessPlayback: true,
-      errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
-    );
+    // LayoutBuilder: tahu ukuran cell aktual → hitung overflow
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        final cellW = constraints.maxWidth;
+        final cellH = constraints.maxHeight;
 
-    if (t.flipH || t.flipV) {
-      img = Transform(
-        alignment: Alignment.center,
-        transform: Matrix4.identity()
-          ..scale(t.flipH ? -1.0 : 1.0, t.flipV ? -1.0 : 1.0, 1.0),
-        child: img,
-      );
-    }
+        // Base image: fit contain dulu supaya aspect diketahui
+        Widget baseImg = Image.file(
+          File(path),
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
+        );
 
-    if (t.zoom != 1.0) {
-      img = Transform.scale(scale: t.zoom, child: img);
-    }
+        // Flip
+        if (t.flipH || t.flipV) {
+          baseImg = Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..scale(t.flipH ? -1.0 : 1.0, t.flipV ? -1.0 : 1.0, 1.0),
+            child: baseImg,
+          );
+        }
 
-    if (t.rotation != 0.0) {
-      img = Transform.rotate(angle: t.rotation, child: img);
-    }
+        // Rotate (kalau ada)
+        if (t.rotation != 0.0) {
+          baseImg = Transform.rotate(angle: t.rotation, child: baseImg);
+        }
 
-    if (t.offset != Offset.zero) {
-      img = FractionalTranslation(translation: t.offset, child: img);
-    }
+        // Color filter
+        if (t.hasFilter) {
+          baseImg = ColorFiltered(
+            colorFilter: ColorFilter.matrix(_buildColorMatrix(t)),
+            child: baseImg,
+          );
+        }
 
-    // Apply color filter kalau ada
-    if (t.hasFilter) {
-      img = ColorFiltered(
-        colorFilter: ColorFilter.matrix(_buildColorMatrix(t)),
-        child: img,
-      );
-    }
+        // Cover cell: pakai FittedBox supaya image cover area cell
+        // (skala image sampai cover, bagian luar clip)
+        Widget covered = ClipRect(
+          child: SizedBox(
+            width: cellW,
+            height: cellH,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
+              child: SizedBox(
+                // Placeholder size — aspect dari image akan di-respect oleh FittedBox
+                width: cellW,
+                height: cellH,
+                child: baseImg,
+              ),
+            ),
+          ),
+        );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.cornerRadius),
-      child: img,
+        // Zoom + pan:
+        // - zoom mengalikan skala (1.0 = cover pas)
+        // - offset dalam fraction cell (-1..1) → geser pixel = offset * cell
+        // Hitung overflow: setelah zoom, berapa pixel ekstra di setiap sisi
+        // Bounding: total overflow = (zoom - 1) * cell / 2 per sisi
+        // Opsi A: bisa geser walau zoom 1.0 (foto cover punya overflow)
+        // Formula: 0.5 cell (base overflow) + tambahan dari zoom
+        final maxShiftX = (0.5 + (t.zoom - 1.0) / 2).clamp(0.0, 10.0) * cellW;
+        final maxShiftY = (0.5 + (t.zoom - 1.0) / 2).clamp(0.0, 10.0) * cellH;
+
+        // offset disimpan normalized -1..1, di-map ke -maxShift..+maxShift
+        final shiftX = t.offset.dx * maxShiftX;
+        final shiftY = t.offset.dy * maxShiftY;
+
+        Widget transformed = Transform.scale(
+          scale: t.zoom,
+          child: Transform.translate(
+            offset: Offset(shiftX, shiftY),
+            child: covered,
+          ),
+        );
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(widget.cornerRadius),
+          child: transformed,
+        );
+      },
     );
   }
 
