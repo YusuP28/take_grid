@@ -173,15 +173,22 @@ class _GridPreviewState extends State<GridPreview> {
           );
         }
 
-        // Cover cell langsung — Image fit cover, isi penuh cell
-        Widget covered = SizedBox(
-          width: cellW,
-          height: cellH,
-          child: FittedBox(
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            clipBehavior: Clip.hardEdge,
-            child: baseImg,
+        // Cover cell: OverflowBox + ClipRect
+        // Foto isi penuh cell (cover), aspect tetap, overflow bisa di-drag
+        Widget covered = ClipRect(
+          child: OverflowBox(
+            maxWidth: double.infinity,
+            maxHeight: double.infinity,
+            minWidth: 0,
+            minHeight: 0,
+            child: Image.file(
+              File(path),
+              fit: BoxFit.cover,
+              width: cellW,
+              height: cellH,
+              gaplessPlayback: true,
+              errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
+            ),
           ),
         );
 
