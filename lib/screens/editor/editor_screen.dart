@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -11,6 +12,7 @@ import '../../widgets/grid_preview.dart';
 import '../../services/export_service.dart';
 import '../../services/editor_settings_service.dart';
 import '../../services/smart_grid_service.dart';
+import '../../services/project_service.dart';
 
 enum BottomPanel { none, border, corner, background, text, emoji, transform, filter }
 
@@ -18,11 +20,13 @@ class EditorScreen extends StatefulWidget {
   final GridTemplate template;
   final List<String>? initialImages;
   final GridRatio? initialRatio;
+  final int? projectId;
   const EditorScreen({
     super.key,
     required this.template,
     this.initialImages,
     this.initialRatio,
+    this.projectId,
   });
 
   @override
@@ -36,6 +40,10 @@ class _EditorScreenState extends State<EditorScreen> {
   ExportFormat _format = ExportFormat.jpg;
   ExportQuality _quality = ExportQuality.fhd1080;
   bool _exporting = false;
+  bool _saving = false;
+  bool _dirty = false;
+  int? _projectId;
+  final _projectService = ProjectService();
   BottomPanel _panel = BottomPanel.none;
   int? _activeCellIndex;
   Color _newTextColor = Colors.white;
@@ -54,13 +62,32 @@ class _EditorScreenState extends State<EditorScreen> {
       }
     }
     _loadSavedSettings();
+    if (widget.projectId != null) {
+      _loadExistingProject(widget.projectId!);
+    }
+  }
+
+  Future<void> _loadExistingProject(int id) async {
+    final loaded = await _projectService.loadProject(id);
+    if (!mounted) return;
+    if (loaded == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Project tidak ditemukan')),
+      );
+      return;
+    }
+    setState(() {
+      _project = loaded;
+      _projectId = id;
+      _dirty = false;
+    });
   }
 
   Future<void> _loadSavedSettings() async {
     final svc = EditorSettingsService();
     await svc.load();
     if (!mounted) return;
-    setState(() {
+    _mutate(() {
       if (svc.borderWidth != null) _project.borderWidth = svc.borderWidth!;
       if (svc.borderColor != null) _project.borderColor = svc.borderColor!;
       if (svc.cornerRadius != null) _project.cornerRadius = svc.cornerRadius!;
@@ -75,6 +102,155 @@ class _EditorScreenState extends State<EditorScreen> {
     });
   }
 
+
+  // ============= SAVE / LOAD PROJECT =============
+  void _markDirty() {
+    if (!_dirty && mounted) {
+      setState(() => _dirty = true);
+    }
+  }
+
+  /// setState + auto mark dirty (untuk mutasi _project)
+  void _mutate(VoidCallback fn) {
+    setState(() {
+      fn();
+      _dirty = true;
+    });
+  }
+
+  Future<void> _saveProject() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      if (_projectId == null) {
+        final id = await _projectService.saveProject(_project);
+        _projectId = id;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Project tersimpan')),
+          );
+        }
+      } else {
+        await _projectService.updateProject(_projectId!, _project);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Project diperbarui')),
+          );
+        }
+      }
+      await _captureThumbnail();
+      if (mounted) setState(() => _dirty = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal simpan: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _saveAs() async {
+    final ctrl = TextEditingController(
+      text: _projectId == null
+          ? _project.template.name
+          : '${_project.template.name} (copy)',
+    );
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Simpan Sebagai'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nama Project',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final id = await _projectService.saveProject(_project, name: name);
+      if (!mounted) return;
+      setState(() {
+        _projectId = id;
+        _dirty = false;
+      });
+      await _captureThumbnail();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tersimpan sebagai "$name"')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal simpan: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _captureThumbnail() async {
+    if (_projectId == null) return;
+    try {
+      final bytes = await ExportService().captureWidget(_exportKey);
+      if (bytes == null) return;
+      final dir = await getApplicationDocumentsDirectory();
+      final thumbDir = Directory('${dir.path}/thumbnails');
+      if (!thumbDir.existsSync()) thumbDir.createSync(recursive: true);
+      final file = File('${thumbDir.path}/project_$_projectId.png');
+      await file.writeAsBytes(bytes);
+      await _projectService.updateThumbnail(_projectId!, file.path);
+    } catch (_) {
+      // silent — thumbnail opsional
+    }
+  }
+
+  Future<void> _confirmDiscard() async {
+    if (!_dirty) return;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Belum Disimpan'),
+        content: const Text('Perubahan belum disimpan. Simpan dulu?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'cancel'),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'discard'),
+            child: const Text('Buang'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'save'),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    if (result == 'save') {
+      await _saveProject();
+    }
+  }
+
   // ============= PICK IMAGE =============
   Future<void> _pickImageForCell(int index) async {
     try {
@@ -84,7 +260,7 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       if (f == null) return;
       if (!mounted) return;
-      setState(() => _project.setImage(index, f.path));
+      _mutate(() => _project.setImage(index, f.path));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +277,7 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       if (files.isEmpty) return;
       if (!mounted) return;
-      setState(() {
+      _mutate(() {
         int idx = 0;
         for (final f in files) {
           if (idx >= _project.template.cellCount) break;
@@ -119,7 +295,7 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   void _clearCell(int index) {
-    setState(() => _project.setImage(index, null));
+    _mutate(() => _project.setImage(index, null));
   }
 
   void _showCellMenu(int index) {
@@ -156,7 +332,7 @@ class _EditorScreenState extends State<EditorScreen> {
               title: const Text('Reset Transform'),
               onTap: () {
                 Navigator.pop(ctx);
-                setState(() => _project.transforms[index].reset());
+                _mutate(() => _project.transforms[index].reset());
               },
             ),
             ListTile(
@@ -181,7 +357,7 @@ class _EditorScreenState extends State<EditorScreen> {
   void _commitText() {
     final txt = _newTextCtrl.text.trim();
     if (txt.isEmpty) return;
-    setState(() {
+    _mutate(() {
       _project.overlays.add(OverlayItem(
         id: const Uuid().v4(),
         type: OverlayType.text,
@@ -235,7 +411,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     value: o.position.dx, min: 0, max: 1,
                     onChanged: (v) {
                       setLocal(() {});
-                      setState(() {
+                      _mutate(() {
                         _project.overlays[index] = o.copyWith(
                           position: Offset(v, o.position.dy));
                       });
@@ -248,7 +424,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     value: o.position.dy, min: 0, max: 1,
                     onChanged: (v) {
                       setLocal(() {});
-                      setState(() {
+                      _mutate(() {
                         _project.overlays[index] = o.copyWith(
                           position: Offset(o.position.dx, v));
                       });
@@ -261,7 +437,7 @@ class _EditorScreenState extends State<EditorScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                setState(() => _project.overlays.removeAt(index));
+                _mutate(() => _project.overlays.removeAt(index));
                 Navigator.pop(ctx);
               },
               child: const Text('Hapus', style: TextStyle(color: Colors.red)),
@@ -443,6 +619,27 @@ class _EditorScreenState extends State<EditorScreen> {
         title: Text(_project.template.name),
         actions: [
           IconButton(
+            icon: _saving
+                ? const SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : Icon(_dirty ? Icons.save : Icons.save_outlined),
+            tooltip: _projectId == null ? 'Simpan' : 'Simpan Perubahan',
+            onPressed: _saving ? null : _saveProject,
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (v) { if (v == 'saveas') _saveAs(); },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'saveas',
+                child: ListTile(
+                  leading: Icon(Icons.save_as_outlined),
+                  title: Text('Simpan Sebagai...'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
             icon: const Icon(Icons.add_photo_alternate),
             tooltip: 'Isi Otomatis',
             onPressed: _pickMultipleImages,
@@ -508,7 +705,7 @@ class _EditorScreenState extends State<EditorScreen> {
                             ),
                         ],
                         onOverlayMove: (idx, pos) {
-                          setState(() {
+                          _mutate(() {
                             _project.overlays[idx] =
                                 _project.overlays[idx].copyWith(position: pos);
                           });
@@ -518,7 +715,7 @@ class _EditorScreenState extends State<EditorScreen> {
                           setState(() => _activeCellIndex = i);
                         },
                         onCellTransform: (i, zoom, offset) {
-                          setState(() {
+                          _mutate(() {
                             final t = _project.transforms[i];
                             t.zoom = zoom;
                             t.offset = offset;
@@ -553,7 +750,7 @@ class _EditorScreenState extends State<EditorScreen> {
                             if (_project.filledCount > 0)
                               TextButton.icon(
                                 onPressed: () {
-                                  setState(() {
+                                  _mutate(() {
                                     for (int i = 0; i < _project.imagePaths.length; i++) {
                                       _project.setImage(i, null);
                                     }
@@ -630,7 +827,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 value: _project.borderWidth, min: 0, max: 20, divisions: 40,
                 label: '${_project.borderWidth.toStringAsFixed(1)}px',
                 onChanged: (v) {
-                  setState(() => _project.borderWidth = v);
+                  _mutate(() => _project.borderWidth = v);
                   EditorSettingsService().saveBorderWidth(v);
                 },
               ),
@@ -657,7 +854,7 @@ class _EditorScreenState extends State<EditorScreen> {
               Slider(
                 value: _project.cornerRadius, min: 0, max: 30, divisions: 30,
                 onChanged: (v) {
-                  setState(() => _project.cornerRadius = v);
+                  _mutate(() => _project.cornerRadius = v);
                   EditorSettingsService().saveCornerRadius(v);
                 },
               ),
@@ -676,7 +873,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   label: Text(t.label),
                   selected: _project.backgroundType == t,
                   onSelected: (_) {
-                    setState(() => _project.backgroundType = t);
+                    _mutate(() => _project.backgroundType = t);
                     EditorSettingsService().saveBgType(BackgroundType.values.indexOf(t));
                   },
                 )).toList(),
@@ -686,7 +883,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 _colorSwatches(
                   _project.backgroundColor,
                   (c) {
-                    setState(() => _project.backgroundColor = c);
+                    _mutate(() => _project.backgroundColor = c);
                     EditorSettingsService().saveBgColor(c);
                   },
                 ),
@@ -695,14 +892,14 @@ class _EditorScreenState extends State<EditorScreen> {
                 const SizedBox(height: 4),
                 _colorSwatches(
                   _project.backgroundColor,
-                  (c) => setState(() => _project.backgroundColor = c),
+                  (c) => _mutate(() => _project.backgroundColor = c),
                 ),
                 const SizedBox(height: 8),
                 const Text('Warna Akhir', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 _colorSwatches(
                   _project.gradientEndColor ?? _project.backgroundColor,
-                  (c) => setState(() => _project.gradientEndColor = c),
+                  (c) => _mutate(() => _project.gradientEndColor = c),
                 ),
               ],
               if (_project.backgroundType == BackgroundType.blurredImage)
@@ -794,7 +991,7 @@ class _EditorScreenState extends State<EditorScreen> {
           itemCount: emojis.length,
           itemBuilder: (_, i) => GestureDetector(
             onTap: () {
-              setState(() {
+              _mutate(() {
                 _project.overlays.add(OverlayItem(
                   id: const Uuid().v4(),
                   type: OverlayType.emoji,
@@ -1123,7 +1320,7 @@ class _EditorScreenState extends State<EditorScreen> {
     if (picked == null) return;
     if (picked.id == _project.template.id) return;
 
-    setState(() {
+    _mutate(() {
       // Simpan settings lama
       final oldImages = List<String?>.from(_project.imagePaths);
       final oldBorder = _project.borderWidth;

@@ -49,6 +49,19 @@ class GridTemplates {
     _t3x3withBigCenter(),
   ];
 
+  /// Cari template by id. Return null kalau tidak ada.
+  static GridTemplate? byId(String id) {
+    for (final t in all) {
+      if (t.id == id) return t;
+    }
+    return null;
+  }
+
+  /// Cari template by id, fallback ke first kalau tidak ada.
+  static GridTemplate byIdOrFirst(String id) {
+    return byId(id) ?? all.first;
+  }
+
   static GridTemplate _t2x2() => const GridTemplate(
         id: 'grid_2x2',
         name: '2×2',

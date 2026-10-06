@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.0] - 2026-10-06
+
+### Added
+- Save Project — simpan grid sebagai draft di SQLite (ProjectService)
+- Save As — simpan sebagai project baru dengan nama custom
+- Auto thumbnail — preview project otomatis dari canvas
+- Load project — buka draft dari home screen
+- Drafts section di home — grid thumbnail 2 kolom
+- Delete project — long-press card + konfirmasi
+- GridProject serialisasi JSON (toJson/fromJson)
+- GridTemplates.byId + byIdOrFirst helper
+
+### Removed
+- layout_picker_screen.dart (dead code, tidak dipakai)
+
+### Changed
+- HomeScreen: StatelessWidget → StatefulWidget (refresh draft list)
+- EditorScreen: AppBar tombol Save + menu Simpan Sebagai
+
 ## [1.1.1] - 2026-10-04
 
 ### Added
