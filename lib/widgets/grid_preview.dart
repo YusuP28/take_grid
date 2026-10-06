@@ -173,22 +173,15 @@ class _GridPreviewState extends State<GridPreview> {
           );
         }
 
-        // Cover cell: pakai FittedBox supaya image cover area cell
-        // (skala image sampai cover, bagian luar clip)
-        Widget covered = ClipRect(
-          child: SizedBox(
-            width: cellW,
-            height: cellH,
-            child: FittedBox(
-              fit: BoxFit.cover,
-              clipBehavior: Clip.hardEdge,
-              child: SizedBox(
-                // Placeholder size — aspect dari image akan di-respect oleh FittedBox
-                width: cellW,
-                height: cellH,
-                child: baseImg,
-              ),
-            ),
+        // Cover cell langsung — Image fit cover, isi penuh cell
+        Widget covered = SizedBox(
+          width: cellW,
+          height: cellH,
+          child: FittedBox(
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            clipBehavior: Clip.hardEdge,
+            child: baseImg,
           ),
         );
 
