@@ -272,8 +272,11 @@ class _EditorScreenState extends State<EditorScreen> {
 
   Future<void> _pickMultipleImages() async {
     try {
+      final maxSelect = _project.template.cellCount;
       final files = await _picker.pickMultiImage(
-        imageQuality: 90, maxWidth: 2048,
+        imageQuality: 90,
+        maxWidth: 2048,
+        limit: maxSelect,
       );
       if (files.isEmpty) return;
       if (!mounted) return;
@@ -616,7 +619,6 @@ class _EditorScreenState extends State<EditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_project.template.name),
         actions: [
           IconButton(
             icon: _saving

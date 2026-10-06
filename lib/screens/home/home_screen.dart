@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final files = await picker.pickMultiImage(
       imageQuality: 90,
       maxWidth: 2048,
-      limit: 20,
+      limit: 20, // max untuk auto-grid (12 cell terbanyak)
     );
     if (files.isEmpty) return;
 

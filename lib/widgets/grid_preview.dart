@@ -138,7 +138,7 @@ class _GridPreviewState extends State<GridPreview> {
 
     Widget img = Image.file(
       File(path),
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
       gaplessPlayback: true,
       errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
     );
