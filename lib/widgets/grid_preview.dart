@@ -138,7 +138,7 @@ class _GridPreviewState extends State<GridPreview> {
 
     Widget img = Image.file(
       File(path),
-      fit: BoxFit.cover,  // Auto-fit: cover cell di awal
+      fit: BoxFit.contain,  // Collage mode: foto utuh, center
       gaplessPlayback: true,
       errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
     );
@@ -271,7 +271,7 @@ class _GridPreviewState extends State<GridPreview> {
                               if (cw <= 0 || ch <= 0) return;
 
                               // Zoom: relatif ke baseline
-                              final newZoom = (baseZoom * details.scale).clamp(0.5, 5.0);
+                              final newZoom = (baseZoom * details.scale).clamp(1.0, 5.0);
 
                               // Pan: akumulatif dari live state (bukan baseOff)
                               final liveOff = _liveOffset[i] ?? _scaleStartOffset[i] ?? t.offset;
