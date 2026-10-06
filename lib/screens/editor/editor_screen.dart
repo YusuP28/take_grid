@@ -13,6 +13,7 @@ import '../../services/export_service.dart';
 import '../../services/editor_settings_service.dart';
 import '../../services/smart_grid_service.dart';
 import '../../services/project_service.dart';
+import '../picker/multi_picker_screen.dart';
 
 enum BottomPanel { none, border, corner, background, text, emoji, transform, filter }
 
@@ -254,13 +255,18 @@ class _EditorScreenState extends State<EditorScreen> {
   // ============= PICK IMAGE =============
   Future<void> _pickImageForCell(int index) async {
     try {
-      final f = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 90, maxWidth: 2048,
+      final files = await Navigator.push<List<File>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MultiPickerScreen(
+            maxCount: 1,
+            title: 'Pilih 1 Foto',
+          ),
+        ),
       );
-      if (f == null) return;
+      if (files == null || files.isEmpty) return;
       if (!mounted) return;
-      _mutate(() => _project.setImage(index, f.path));
+      _mutate(() => _project.setImage(index, files.first.path));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -273,12 +279,16 @@ class _EditorScreenState extends State<EditorScreen> {
   Future<void> _pickMultipleImages() async {
     try {
       final maxSelect = _project.template.cellCount;
-      final files = await _picker.pickMultiImage(
-        imageQuality: 90,
-        maxWidth: 2048,
-        limit: maxSelect,
+      final files = await Navigator.push<List<File>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MultiPickerScreen(
+            maxCount: maxSelect,
+            title: 'Pilih Foto (max $maxSelect)',
+          ),
+        ),
       );
-      if (files.isEmpty) return;
+      if (files == null || files.isEmpty) return;
       if (!mounted) return;
       _mutate(() {
         int idx = 0;
