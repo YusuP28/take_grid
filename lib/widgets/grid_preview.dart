@@ -58,6 +58,7 @@ class _GridPreviewState extends State<GridPreview> {
   final Map<int, Offset> _scaleStartOffset = {};
   final Map<int, Offset> _liveOffset = {};
   final Map<int, double> _liveZoom = {};
+  final Map<int, Size> _cellSizes = {};
 
   Widget _buildBackground() {
     switch (widget.backgroundType) {
@@ -132,7 +133,10 @@ class _GridPreviewState extends State<GridPreview> {
   }
 
   Widget _buildTransformedImage(String path, int index) {
-    final transform = widget.transforms[index] ?? const CellTransform();
+    final transform = (widget.transforms != null &&
+            index < widget.transforms!.length)
+        ? widget.transforms![index]
+        : CellTransform();
     final zoom = _liveZoom[index] ?? transform.zoom;
     final offset = _liveOffset[index] ?? transform.offset;
     final cellSize = _cellSizes[index] ?? const Size(100, 100);
