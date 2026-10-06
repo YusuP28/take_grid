@@ -132,93 +132,45 @@ class _GridPreviewState extends State<GridPreview> {
   }
 
   Widget _buildTransformedImage(String path, int index) {
-    final t = (widget.transforms != null && index < widget.transforms!.length)
-        ? widget.transforms![index]
-        : CellTransform();
+    final transform = widget.transforms[index] ?? const CellTransform();
+    final zoom = _liveZoom[index] ?? transform.zoom;
+    final offset = _liveOffset[index] ?? transform.offset;
+    final cellSize = _cellSizes[index] ?? const Size(100, 100);
 
-    // LayoutBuilder: tahu ukuran cell aktual → hitung overflow
-    return LayoutBuilder(
-      builder: (ctx, constraints) {
-        final cellW = constraints.maxWidth;
-        final cellH = constraints.maxHeight;
+    final maxShiftX = (0.5 + (zoom - 1.0) / 2.0) * cellSize.width;
+    final maxShiftY = (0.5 + (zoom - 1.0) / 2.0) * cellSize.height;
 
-        // Base image: fit contain dulu supaya aspect diketahui
-        Widget baseImg = Image.file(
-          File(path),
-          fit: BoxFit.contain,
-          gaplessPlayback: true,
-          errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
-        );
+    final shiftX = offset.dx * maxShiftX;
+    final shiftY = offset.dy * maxShiftY;
 
-        // Flip
-        if (t.flipH || t.flipV) {
-          baseImg = Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..scale(t.flipH ? -1.0 : 1.0, t.flipV ? -1.0 : 1.0, 1.0),
-            child: baseImg,
-          );
-        }
+    Widget imgWidget = Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      width: cellSize.width,
+      height: cellSize.height,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
+    );
 
-        // Rotate (kalau ada)
-        if (t.rotation != 0.0) {
-          baseImg = Transform.rotate(angle: t.rotation, child: baseImg);
-        }
+    if (transform.hasFilter) {
+      imgWidget = ColorFiltered(
+        colorFilter: ColorFilter.matrix(_buildColorMatrix(transform)),
+        child: imgWidget,
+      );
+    }
 
-        // Color filter
-        if (t.hasFilter) {
-          baseImg = ColorFiltered(
-            colorFilter: ColorFilter.matrix(_buildColorMatrix(t)),
-            child: baseImg,
-          );
-        }
+    final scaleX = zoom * (transform.flipH ? -1.0 : 1.0);
+    final scaleY = zoom * (transform.flipV ? -1.0 : 1.0);
 
-        // Cover cell: OverflowBox + ClipRect
-        // Foto isi penuh cell (cover), aspect tetap, overflow bisa di-drag
-        Widget covered = ClipRect(
-          child: OverflowBox(
-            maxWidth: double.infinity,
-            maxHeight: double.infinity,
-            minWidth: 0,
-            minHeight: 0,
-            child: Image.file(
-              File(path),
-              fit: BoxFit.cover,
-              width: cellW,
-              height: cellH,
-              gaplessPlayback: true,
-              errorBuilder: (_, __, ___) => Container(color: widget.cellColor),
-            ),
-          ),
-        );
-
-        // Zoom + pan:
-        // - zoom mengalikan skala (1.0 = cover pas)
-        // - offset dalam fraction cell (-1..1) → geser pixel = offset * cell
-        // Hitung overflow: setelah zoom, berapa pixel ekstra di setiap sisi
-        // Bounding: total overflow = (zoom - 1) * cell / 2 per sisi
-        // Opsi A: bisa geser walau zoom 1.0 (foto cover punya overflow)
-        // Formula: 0.5 cell (base overflow) + tambahan dari zoom
-        final maxShiftX = (0.5 + (t.zoom - 1.0) / 2).clamp(0.0, 10.0) * cellW;
-        final maxShiftY = (0.5 + (t.zoom - 1.0) / 2).clamp(0.0, 10.0) * cellH;
-
-        // offset disimpan normalized -1..1, di-map ke -maxShift..+maxShift
-        final shiftX = t.offset.dx * maxShiftX;
-        final shiftY = t.offset.dy * maxShiftY;
-
-        Widget transformed = Transform.scale(
-          scale: t.zoom,
-          child: Transform.translate(
-            offset: Offset(shiftX, shiftY),
-            child: covered,
-          ),
-        );
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(widget.cornerRadius),
-          child: transformed,
-        );
-      },
+    return ClipRect(
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..translate(shiftX, shiftY)
+          ..rotateZ(transform.rotation)
+          ..scale(scaleX, scaleY),
+        child: imgWidget,
+      ),
     );
   }
 
